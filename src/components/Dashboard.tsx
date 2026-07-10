@@ -8,6 +8,8 @@ import QRCode from 'react-qr-code';
 import { Truck, BellRing } from 'lucide-react';
 import { playNotificationSound, speakNotification } from '../audio';
 import * as XLSX from 'xlsx';
+import DatePicker from 'react-multi-date-picker';
+import "react-multi-date-picker/styles/backgrounds/bg-dark.css";
 
 
 interface DashboardProps {
@@ -62,7 +64,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       console.log('Contacts listener error:', error);
     });
 
-    const q = query(collection(db, 'vehicles'), orderBy('created_at', 'desc'));
+    const q = query(collection(db, 'vehicles'), orderBy('created_at', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
       
@@ -570,31 +572,45 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
             placeholder="Buscar placa..." 
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className="bg-black/40 border border-white/10 rounded px-3 py-1 text-xs focus:outline-none focus:border-blue-500 text-white"
+            className="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white"
           />
-          <details className="relative group">
+
+          <details className="relative group z-50">
             <summary className="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs text-white cursor-pointer list-none flex items-center gap-2 focus:outline-none focus:border-blue-500">
-              <span>Datas {selectedDates.length > 0 && `(${selectedDates.length})`}</span>
+              <span>Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}</span>
               <span className="group-open:rotate-180 transition-transform text-[8px]">▼</span>
             </summary>
             <div className="absolute right-0 top-full mt-1 bg-[#15151A] border border-white/10 rounded p-2 z-50 flex flex-col gap-1 w-48 max-h-64 overflow-y-auto shadow-xl">
-              {availableDates.map(date => (
-                <label key={date} className="flex items-center gap-2 text-xs text-white/80 cursor-pointer p-1 hover:bg-white/5 rounded">
+              {PROGRESS_OPTIONS.map(status => (
+                <label key={status} className="flex items-center gap-2 text-xs text-white/80 cursor-pointer p-1 hover:bg-white/5 rounded">
                   <input 
                     type="checkbox" 
-                    checked={selectedDates.includes(date)}
+                    checked={selectedStatuses.includes(status)}
                     onChange={(e) => {
-                      if (e.target.checked) setSelectedDates(prev => [...prev, date]);
-                      else setSelectedDates(prev => prev.filter(d => d !== date));
+                      if (e.target.checked) setSelectedStatuses(prev => [...prev, status]);
+                      else setSelectedStatuses(prev => prev.filter(s => s !== status));
                     }}
                     className="accent-blue-500"
                   />
-                  {date.split('-').reverse().join('/')}
+                  {status}
                 </label>
               ))}
-              {availableDates.length === 0 && <div className="text-xs text-white/40 p-1">Nenhuma data</div>}
             </div>
           </details>
+
+          <DatePicker 
+            multiple
+            value={selectedDates}
+            onChange={(dates) => {
+              const newDates = (dates || []).map((d: any) => d.format?.('YYYY-MM-DD') || d.toString());
+              setSelectedDates(newDates);
+            }}
+            format="DD/MM/YYYY"
+            placeholder="Datas..."
+            inputClass="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 w-40 cursor-pointer"
+            className="bg-dark"
+          />
+
           <select value={view} onChange={(e) => setView(e.target.value as any)} className="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white">
             <option value="cards">Cards Completos</option>
             <option value="simple">Cards Simples</option>

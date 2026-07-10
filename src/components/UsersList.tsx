@@ -28,15 +28,16 @@ export function UsersList() {
     return unsubscribe;
   }, []);
 
-  const handleResetPassword = async (email: string) => {
-    if (window.confirm(`Deseja enviar um email de redefinição de senha para ${email}?`)) {
-      try {
-        await sendPasswordResetEmail(auth, email);
-        alert('Email de redefinição enviado com sucesso!');
-      } catch (err: any) {
-        console.error(err);
-        alert('Erro ao enviar email de redefinição: ' + err.message);
-      }
+  const [resettingEmail, setResettingEmail] = useState<string | null>(null);
+
+  const executeResetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert('Email de redefinição enviado com sucesso!');
+      setResettingEmail(null);
+    } catch (err: any) {
+      console.error(err);
+      alert('Erro ao enviar email de redefinição: ' + err.message);
     }
   };
 
@@ -92,14 +93,15 @@ export function UsersList() {
     }
   };
 
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja remover este usuário?')) {
-      try {
-        await deleteDoc(doc(db, 'users', id));
-      } catch (err) {
-        console.error(err);
-        alert('Erro ao remover usuário.');
-      }
+    try {
+      await deleteDoc(doc(db, 'users', id));
+      setDeletingUserId(null);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao remover usuário.');
     }
   };
 
@@ -155,9 +157,21 @@ export function UsersList() {
               Cancelar
             </button>
             {!isAdding && user.email && (
-              <button type="button" onClick={() => handleResetPassword(user.email)} className="bg-yellow-600/20 border border-yellow-500/30 text-yellow-500 text-xs font-bold py-3 px-6 rounded hover:bg-yellow-600/30 transition-colors uppercase tracking-wider ml-auto">
-                Redefinir Senha
-              </button>
+              resettingEmail === user.email ? (
+                <div className="flex gap-2 ml-auto items-center">
+                  <span className="text-[10px] text-yellow-500 uppercase tracking-widest mr-2">Enviar email de redefinição?</span>
+                  <button type="button" onClick={() => setResettingEmail(null)} className="text-[10px] font-bold text-white/60 hover:text-white uppercase tracking-widest">
+                    Cancelar
+                  </button>
+                  <button type="button" onClick={() => executeResetPassword(user.email!)} className="bg-yellow-600 border border-yellow-500 text-white text-[10px] font-bold py-2 px-4 rounded hover:bg-yellow-700 transition-colors uppercase tracking-widest">
+                    Sim, Enviar
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setResettingEmail(user.email!)} className="bg-yellow-600/20 border border-yellow-500/30 text-yellow-500 text-xs font-bold py-3 px-6 rounded hover:bg-yellow-600/30 transition-colors uppercase tracking-wider ml-auto">
+                  Redefinir Senha
+                </button>
+              )
             )}
           </div>
         </form>
@@ -190,9 +204,21 @@ export function UsersList() {
               <button onClick={() => setEditingUser(u)} className="text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-widest">
                 Editar
               </button>
-              <button onClick={() => handleDelete(u.id!)} className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase tracking-widest">
-                Remover
-              </button>
+              {deletingUserId === u.id ? (
+                <div className="flex gap-2">
+                  <span className="text-[10px] text-white/60 uppercase tracking-widest flex items-center">Tem certeza?</span>
+                  <button onClick={() => setDeletingUserId(null)} className="text-[10px] font-bold text-white/60 hover:text-white uppercase tracking-widest">
+                    Cancelar
+                  </button>
+                  <button onClick={() => handleDelete(u.id!)} className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase tracking-widest">
+                    Sim
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setDeletingUserId(u.id!)} className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase tracking-widest">
+                  Remover
+                </button>
+              )}
             </div>
           </div>
         ))}

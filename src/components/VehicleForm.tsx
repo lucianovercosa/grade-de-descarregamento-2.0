@@ -100,7 +100,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
     newAttachments.splice(index, 1);
     setFormData({ ...formData, attachments: newAttachments });
   };
-  const [empilhadores, setEmpilhadores] = useState<AppUser[]>([]);
+  const [empilhadores, setEmpilhadores] = useState<any[]>([]);
   const [productsList, setProductsList] = useState<{code: string, description: string}[]>([]);
   const [whatsappContacts, setWhatsappContacts] = useState<{name: string, phone: string}[]>([]);
   
@@ -115,13 +115,17 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
       console.log('Contacts listener error:', error);
     });
 
-    // Load empilhadores
+    // Load empilhadores and responsibles
     const loadUsers = async () => {
       try {
         const q = query(collection(db, 'users'), where('role', '==', 'empilhador'));
         const snap = await getDocs(q);
-        const usersList: AppUser[] = [];
-        snap.forEach(d => usersList.push({ id: d.id, ...d.data() } as AppUser));
+        const usersList: any[] = [];
+        snap.forEach(d => usersList.push({ id: d.id, ...d.data() }));
+
+        const rSnap = await getDocs(collection(db, 'responsibles'));
+        rSnap.forEach(d => usersList.push({ id: d.id, ...d.data() }));
+
         setEmpilhadores(usersList);
       } catch (err) {
         console.error("Failed to load empilhadores", err);
@@ -243,6 +247,9 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
       
       if (vehicleId) {
         onSaved();
+      } else {
+        setFormData(emptyVehicle);
+        alert('Veículo cadastrado com sucesso!');
       }
     } catch (err: any) {
       alert(err.message);
@@ -441,7 +448,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
         {/* Bottom fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold md:col-span-2">
-            Empilhador
+            Responsável / Empilhador
             <select className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.forklift_user_id || ''} onChange={e => setFormData({...formData, forklift_user_id: e.target.value})}>
               <option value="" className="bg-[#15151A]">Sem responsável</option>
               {empilhadores.map(emp => (

@@ -9,6 +9,7 @@ import { UsersList } from './components/UsersList';
 import { PublicStatus } from './components/PublicStatus';
 import { ProductsManager } from './components/ProductsManager';
 import { ChangePassword } from './components/ChangePassword';
+import { ResponsiblesManager } from './components/ResponsiblesManager';
 
 function MainApp() {
   const { user, loading } = useAuth();
@@ -52,6 +53,10 @@ function MainApp() {
 
     if (activeView === 'products') {
       return <ProductsManager />;
+    }
+
+    if (activeView === 'responsibles') {
+      return <ResponsiblesManager />;
     }
 
     return (

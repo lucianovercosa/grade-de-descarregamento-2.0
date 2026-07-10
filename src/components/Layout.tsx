@@ -63,6 +63,12 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
               >
                 <span className="text-sm">Usuários</span>
               </button>
+              <button 
+                onClick={() => onNavigate('responsibles')}
+                className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'responsibles' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+              >
+                <span className="text-sm">Responsáveis</span>
+              </button>
 
             </>
           )}
