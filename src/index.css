@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+@theme {
+  --animate-neon-pulse: neon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  @keyframes neon-pulse {
+    0%, 100% {
+      opacity: 1;
+      text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff;
+      color: #fff;
+    }
+    50% {
+      opacity: .8;
+      text-shadow: 0 0 2px #0ff, 0 0 5px #0ff;
+      color: #e0ffff;
+    }
+  }
+}
