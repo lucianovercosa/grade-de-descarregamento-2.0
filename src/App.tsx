@@ -85,13 +85,6 @@ export default function App() {
         setPublicToken(token);
       }
     }
-    
-    let titleText = "Grade de Descarregamento ASA Recife • ";
-    const interval = setInterval(() => {
-      titleText = titleText.substring(1) + titleText.substring(0, 1);
-      document.title = titleText;
-    }, 300);
-    return () => clearInterval(interval);
   }, []);
 
   if (publicToken) {

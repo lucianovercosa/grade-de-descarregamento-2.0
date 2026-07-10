@@ -2,7 +2,7 @@ import React from "react";
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 
 export type UserRole = 'admin' | 'empilhador' | 'mro' | 'tv';
 
@@ -52,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           } else {
             // Try to find the user by email
-            const { collection, query, where, getDocs, setDoc } = await import('firebase/firestore');
             const q = query(collection(db, 'users'), where('email', '==', fbUser.email));
             const querySnapshot = await getDocs(q);
             
