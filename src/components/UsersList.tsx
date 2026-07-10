@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { db, secondaryAuth } from '../firebase';
-import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { db, secondaryAuth, auth } from '../firebase';
+import { createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { AppUser } from '../types';
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
@@ -27,6 +27,18 @@ export function UsersList() {
     });
     return unsubscribe;
   }, []);
+
+  const handleResetPassword = async (email: string) => {
+    if (window.confirm(`Deseja enviar um email de redefinição de senha para ${email}?`)) {
+      try {
+        await sendPasswordResetEmail(auth, email);
+        alert('Email de redefinição enviado com sucesso!');
+      } catch (err: any) {
+        console.error(err);
+        alert('Erro ao enviar email de redefinição: ' + err.message);
+      }
+    }
+  };
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -126,13 +138,18 @@ export function UsersList() {
             Usuário Ativo
           </label>
           
-          <div className="flex gap-3 mt-4">
+          <div className="flex gap-3 mt-4 flex-wrap">
             <button type="submit" disabled={loading} className="bg-blue-600 disabled:opacity-50 text-white text-xs font-bold py-3 px-6 rounded hover:bg-blue-700 transition-colors uppercase tracking-wider">
               {loading ? "Aguarde..." : "Salvar Usuário"}
             </button>
             <button type="button" onClick={() => { setIsAdding(false); setEditingUser(null); }} className="bg-white/5 border border-white/10 text-white text-xs font-bold py-3 px-6 rounded hover:bg-white/10 transition-colors uppercase tracking-wider">
               Cancelar
             </button>
+            {!isAdding && user.email && (
+              <button type="button" onClick={() => handleResetPassword(user.email)} className="bg-yellow-600/20 border border-yellow-500/30 text-yellow-500 text-xs font-bold py-3 px-6 rounded hover:bg-yellow-600/30 transition-colors uppercase tracking-wider ml-auto">
+                Redefinir Senha
+              </button>
+            )}
           </div>
         </form>
       </div>
