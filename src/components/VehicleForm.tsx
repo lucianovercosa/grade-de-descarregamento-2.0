@@ -304,7 +304,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
           </label>
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             Nota fiscal
-            <input maxLength={10} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.invoice_number || ''} onChange={e => setFormData({...formData, invoice_number: e.target.value})} />
+            <input className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.invoice_number || ''} onChange={e => setFormData({...formData, invoice_number: e.target.value})} />
           </label>
           
           <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
