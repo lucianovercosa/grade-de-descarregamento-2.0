@@ -15,6 +15,7 @@ export interface Vehicle {
   supplier: string;
   invoice_number: string;
   items: VehicleItem[];
+  attachments?: { name: string; url: string; type: string }[];
   forklift_user_id: string;
   forklift_name: string;
   notes: string;

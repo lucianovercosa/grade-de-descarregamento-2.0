@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Vehicle } from '../types';
@@ -7,6 +7,7 @@ import { Truck } from 'lucide-react';
 export function PublicStatus({ token }: { token: string }) {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'vehicles'), where('public_token', '==', token));
@@ -23,6 +24,31 @@ export function PublicStatus({ token }: { token: string }) {
     });
     return unsubscribe;
   }, [token]);
+
+  const openAttachment = (e: React.MouseEvent, att: {name?: string, url: string, type?: string}) => {
+    e.preventDefault();
+    if (att.url.startsWith('data:image/') || att.url.includes('firebasestorage')) {
+      setPreviewAtt({ name: att.name || 'Anexo', url: att.url, type: att.type || 'image/jpeg' });
+    } else {
+      if (att.url.startsWith('data:')) {
+        try {
+          const byteString = atob(att.url.split(',')[1]);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          const blob = new Blob([ab], { type: att.type || 'application/octet-stream' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } catch (err) {
+          window.open(att.url, '_blank');
+        }
+      } else {
+        window.open(att.url, '_blank');
+      }
+    }
+  };
 
   if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Buscando...</div>;
 
@@ -93,6 +119,20 @@ export function PublicStatus({ token }: { token: string }) {
             </div>
           </div>
         </div>
+
+        {vehicle.attachments && vehicle.attachments.length > 0 && (
+          <div className="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-widest">Anexos</h3>
+            <div className="flex flex-col gap-2">
+              {vehicle.attachments.map((att, idx) => (
+                <a key={idx} href="#" onClick={(e) => openAttachment(e, att as any)} className="bg-white border border-slate-200 p-3 rounded text-sm text-blue-600 hover:text-blue-700 hover:underline hover:bg-slate-50 transition-colors flex items-center justify-between font-medium">
+                  <span className="truncate">{att.name}</span>
+                  <span className="shrink-0 text-slate-400 text-xs uppercase tracking-widest ml-2">Visualizar</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
         
         <p className="text-xs text-center text-slate-400 mt-4">Atualizado em: {new Date(vehicle.updated_at).toLocaleString('pt-BR')}</p>
         

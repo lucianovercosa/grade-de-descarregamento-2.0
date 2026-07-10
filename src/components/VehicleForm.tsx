@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc, addDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Vehicle, PROGRESS_OPTIONS, PROGRESS_PERCENT, AppUser, VehicleItem } from '../types';
 import { startOfDay, endOfDay, format } from 'date-fns';
 import { handleWhatsAppShare } from '../whatsapp';
@@ -28,10 +29,83 @@ const emptyVehicle: Partial<Vehicle> = {
 export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) {
   const [formData, setFormData] = useState<Partial<Vehicle>>(emptyVehicle);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    
+    setUploading(true);
+    const files = Array.from(e.target.files);
+    const newAttachments = [...(formData.attachments || [])];
+
+    try {
+      for (const f of files) {
+        const file = f as File;
+        let finalFile = file;
+        if (file.type.startsWith('image/')) {
+          const imageCompression = (await import('browser-image-compression')).default;
+          const options = {
+            maxSizeMB: 0.1,
+            maxWidthOrHeight: 800,
+            useWebWorker: true
+          };
+          finalFile = await imageCompression(file, options);
+        }
+        
+        const reader = new FileReader();
+        const base64Url = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(finalFile);
+        });
+        
+        newAttachments.push({ name: file.name, url: base64Url, type: file.type });
+      }
+      setFormData({ ...formData, attachments: newAttachments });
+    } catch (error) {
+      console.error("Error processing file:", error);
+      alert("Erro ao processar o arquivo. Tente um arquivo menor.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const openAttachment = (e: React.MouseEvent, att: {name?: string, url: string, type?: string}) => {
+    e.preventDefault();
+    if (att.url.startsWith('data:image/') || att.url.includes('firebasestorage')) {
+      setPreviewAtt({ name: att.name || 'Anexo', url: att.url, type: att.type || 'image/jpeg' });
+    } else {
+      if (att.url.startsWith('data:')) {
+        try {
+          const byteString = atob(att.url.split(',')[1]);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          const blob = new Blob([ab], { type: att.type || 'application/octet-stream' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } catch (err) {
+          window.open(att.url, '_blank');
+        }
+      } else {
+        window.open(att.url, '_blank');
+      }
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    const newAttachments = [...(formData.attachments || [])];
+    newAttachments.splice(index, 1);
+    setFormData({ ...formData, attachments: newAttachments });
+  };
   const [empilhadores, setEmpilhadores] = useState<AppUser[]>([]);
   const [productsList, setProductsList] = useState<{code: string, description: string}[]>([]);
   const [whatsappContacts, setWhatsappContacts] = useState<{name: string, phone: string}[]>([]);
   const [alertVehicle, setAlertVehicle] = useState<Vehicle | null>(null);
+  const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
 
   useEffect(() => {
     const unsubContacts = onSnapshot(doc(db, 'settings', 'whatsapp'), (docSnap) => {
@@ -410,19 +484,43 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
             <textarea className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal min-h-[80px]" value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} />
           </label>
           
-          <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Anexar fotos ou arquivos
-            <div className="flex items-center gap-2">
-              <input type="file" multiple className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60" />
-            </div>
-          </label>
+          <div className="md:col-span-2 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
+                Anexar fotos ou arquivos
+                <div className="flex items-center gap-2">
+                  <input type="file" multiple onChange={handleFileUpload} disabled={uploading} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60 disabled:opacity-50" />
+                </div>
+              </label>
 
-          <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Tirar foto pelo celular
-            <div className="flex items-center gap-2">
-              <input type="file" accept="image/*" capture="environment" className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60" />
+              <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
+                Tirar foto pelo celular
+                <div className="flex items-center gap-2">
+                  <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} disabled={uploading} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60 disabled:opacity-50" />
+                </div>
+              </label>
             </div>
-          </label>
+            
+            {uploading && <div className="text-blue-400 text-xs font-bold animate-pulse">Enviando arquivo(s)...</div>}
+
+            {formData.attachments && formData.attachments.length > 0 && (
+              <div className="mt-2 space-y-2">
+                <div className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Arquivos Anexados ({formData.attachments.length})</div>
+                <div className="flex flex-col gap-2">
+                  {formData.attachments.map((att, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-black/40 border border-white/10 rounded p-2">
+                      <a href="#" onClick={(e) => openAttachment(e, att)} className="text-blue-400 hover:text-blue-300 text-sm truncate max-w-[80%] hover:underline">
+                        {att.name}
+                      </a>
+                      <button type="button" onClick={() => removeAttachment(idx)} className="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-widest px-2 py-1 bg-red-500/10 rounded">
+                        Remover
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-3 mt-4">

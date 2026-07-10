@@ -43,7 +43,16 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
   const [alertText, setAlertText] = useState<string | null>(null);
   const [whatsappContacts, setWhatsappContacts] = useState<{name: string, phone: string}[]>([]);
   const [alertVehicle, setAlertVehicle] = useState<Vehicle | null>(null);
+  const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
   const prevStatuses = useRef<Record<string, string>>({});
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(t => t + 1);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const unsubContacts = onSnapshot(doc(db, 'settings', 'whatsapp'), (docSnap) => {
@@ -191,6 +200,31 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
     XLSX.writeFile(workbook, `relatorio_veiculos_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
+  const openAttachment = (e: React.MouseEvent, att: {name?: string, url: string, type?: string}) => {
+    e.preventDefault();
+    if (att.url.startsWith('data:image/') || att.url.includes('firebasestorage')) {
+      setPreviewAtt({ name: att.name || 'Anexo', url: att.url, type: att.type || 'image/jpeg' });
+    } else {
+      if (att.url.startsWith('data:')) {
+        try {
+          const byteString = atob(att.url.split(',')[1]);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          const blob = new Blob([ab], { type: att.type || 'application/octet-stream' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } catch (err) {
+          window.open(att.url, '_blank');
+        }
+      } else {
+        window.open(att.url, '_blank');
+      }
+    }
+  };
+
   const renderCard = (v: Vehicle, isSimple: boolean = false) => {
     const progressColor = 
       v.progress_status === 'TRIAGEM' ? 'border-orange-500' :
@@ -307,6 +341,21 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
                 ))}
               </div>
             </details>
+          </div>
+        )}
+
+        {/* Attachments Dropdown */}
+        {v.attachments && v.attachments.length > 0 && (
+          <div className="mt-2 bg-white/5 p-2 rounded">
+            <div className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Anexos ({v.attachments.length})</div>
+            <div className="flex flex-col gap-2">
+              {v.attachments.map((att, idx) => (
+                <a key={idx} href="#" onClick={(e) => openAttachment(e, att as any)} className="text-xs flex items-center justify-between bg-black/40 border border-white/10 p-2 rounded transition-colors hover:bg-white/10 group/link">
+                  <span className="text-blue-400 group-hover/link:text-blue-300 font-bold truncate hover:underline">{att.name || 'Visualizar anexo'}</span>
+                  <span className="text-[9px] uppercase tracking-widest text-white/40">Abrir</span>
+                </a>
+              ))}
+            </div>
           </div>
         )}
 
@@ -483,6 +532,17 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
 
   return (
     <div className="flex flex-col gap-6 relative">
+      {previewAtt && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-4xl flex justify-between items-center mb-4">
+            <h3 className="text-white font-bold truncate">{previewAtt.name}</h3>
+            <button onClick={() => setPreviewAtt(null)} className="text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded font-bold uppercase text-xs tracking-widest">Fechar</button>
+          </div>
+          <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
+            <img src={previewAtt.url} alt="Preview" className="max-w-full max-h-full object-contain rounded" />
+          </div>
+        </div>
+      )}
       {alertVehicle && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in">
           <div className="bg-[#15151A] rounded-xl border border-white/10 p-6 max-w-sm w-full shadow-2xl">
