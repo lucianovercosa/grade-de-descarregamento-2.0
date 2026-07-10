@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile containing role and status.",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "empilhador", "mro", "tv"] },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["username", "name", "role", "active", "createdAt"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "A vehicle delivery/discharge record.",
+      "type": "object",
+      "properties": {
+        "daily_sequence": { "type": "number" },
+        "plate": { "type": "string" },
+        "driver": { "type": "string" },
+        "driver_phone": { "type": "string" },
+        "transporter": { "type": "string" },
+        "supplier": { "type": "string" },
+        "invoice_number": { "type": "string" },
+        "product_code": { "type": "string" },
+        "product_description": { "type": "string" },
+        "product_items": { "type": "string" },
+        "dock": { "type": "string" },
+        "forklift_user_id": { "type": "string" },
+        "forklift_name": { "type": "string" },
+        "volume": { "type": "number" },
+        "notes": { "type": "string" },
+        "public_token": { "type": "string" },
+        "progress_status": { "type": "string" },
+        "progress_percent": { "type": "number" },
+        "started_at": { "type": "string" },
+        "finished_at": { "type": "string" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["plate", "progress_status", "progress_percent", "created_at", "updated_at", "public_token"]
+    },
+    "ProgressEvent": {
+      "title": "Progress Event",
+      "description": "An event tracking the status change of a vehicle.",
+      "type": "object",
+      "properties": {
+        "vehicle_id": { "type": "string" },
+        "plate": { "type": "string" },
+        "old_progress": { "type": "string" },
+        "new_progress": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["vehicle_id", "plate", "new_progress", "created_at"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Product catalog item.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "description": { "type": "string" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["code", "description", "created_at", "updated_at"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Users of the system."
+    },
+    "vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/Vehicle" },
+      "description": "Delivery vehicles."
+    },
+    "progress_events/{eventId}": {
+      "schema": { "$ref": "#/entities/ProgressEvent" },
+      "description": "Vehicle progress history."
+    },
+    "products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Product catalog."
+    }
+  }
+}

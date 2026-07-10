@@ -1,0 +1,6 @@
+{
+  "name": "Grade de Descarregamento ASA Recife",
+  "description": "Sistema para controlar descarregamento de carros/caminhões no almoxarifado, com login, painel para TV e telas para empilhadores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
