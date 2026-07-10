@@ -10,6 +10,7 @@ import { PublicStatus } from './components/PublicStatus';
 import { ProductsManager } from './components/ProductsManager';
 import { ChangePassword } from './components/ChangePassword';
 import { ResponsiblesManager } from './components/ResponsiblesManager';
+import { RolesManager } from './components/RolesManager';
 
 function MainApp() {
   const { user, loading } = useAuth();
@@ -50,13 +51,14 @@ function MainApp() {
     if (activeView === 'users') {
       return <UsersList />;
     }
-
     if (activeView === 'products') {
       return <ProductsManager />;
     }
-
     if (activeView === 'responsibles') {
       return <ResponsiblesManager />;
+    }
+    if (activeView === 'roles') {
+      return <RolesManager />;
     }
 
     return (

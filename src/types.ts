@@ -53,11 +53,18 @@ export interface ProgressEvent {
   created_at: string;
 }
 
+export interface Role {
+  id?: string;
+  name: string;
+  permissions: string[];
+  created_at: string;
+}
+
 export interface AppUser {
   id?: string;
   username: string;
   name: string;
-  role: 'admin' | 'empilhador' | 'mro' | 'tv';
+  role: 'admin' | 'empilhador' | 'mro' | 'tv' | string;
   active: boolean;
   created_at: string;
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db, secondaryAuth, auth } from '../firebase';
 import { createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { AppUser } from '../types';
+import { AppUser, Role } from '../types';
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
   admin: 'Acesso total: Usuários, Produtos, Cadastro e Dashboards.',
@@ -13,19 +13,32 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 
 export function UsersList() {
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [customRoles, setCustomRoles] = useState<Role[]>([]);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, 'users'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qUsers = query(collection(db, 'users'));
+    const unsubUsers = onSnapshot(qUsers, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
       setUsers(data);
     }, (error) => {
       console.log('Users listener error:', error);
     });
-    return unsubscribe;
+
+    const qRoles = query(collection(db, 'roles'));
+    const unsubRoles = onSnapshot(qRoles, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Role));
+      setCustomRoles(data);
+    }, (error) => {
+      console.log('Roles listener error:', error);
+    });
+
+    return () => {
+      unsubUsers();
+      unsubRoles();
+    };
   }, []);
 
   const [resettingEmail, setResettingEmail] = useState<string | null>(null);
@@ -40,6 +53,25 @@ export function UsersList() {
       alert('Erro ao enviar email de redefinição: ' + err.message);
     }
   };
+
+  const getDisplayRoles = () => {
+    const display = [...customRoles];
+    const defaultRoles: Role[] = [
+      { id: 'admin', name: 'admin', permissions: [], created_at: new Date().toISOString() },
+      { id: 'mro', name: 'mro', permissions: [], created_at: new Date().toISOString() },
+      { id: 'empilhador', name: 'empilhador', permissions: [], created_at: new Date().toISOString() },
+      { id: 'tv', name: 'tv', permissions: [], created_at: new Date().toISOString() },
+    ];
+    
+    defaultRoles.forEach(dr => {
+      if (!display.find(r => r.name.toLowerCase() === dr.name.toLowerCase())) {
+        display.unshift(dr);
+      }
+    });
+    return display;
+  };
+
+  const displayRoles = getDisplayRoles();
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -138,10 +170,11 @@ export function UsersList() {
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             Função / Permissão
             <select name="role" defaultValue={user.role} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal">
-              <option value="admin" className="bg-[#15151A]">Administrador - {ROLE_DESCRIPTIONS.admin}</option>
-              <option value="mro" className="bg-[#15151A]">MRO - {ROLE_DESCRIPTIONS.mro}</option>
-              <option value="empilhador" className="bg-[#15151A]">Empilhador - {ROLE_DESCRIPTIONS.empilhador}</option>
-              <option value="tv" className="bg-[#15151A]">TV / Painel - {ROLE_DESCRIPTIONS.tv}</option>
+              {displayRoles.map(role => (
+                <option key={role.id} value={role.name} className="bg-[#15151A]">
+                  {role.name.toUpperCase()} {ROLE_DESCRIPTIONS[role.name.toLowerCase()] ? `- ${ROLE_DESCRIPTIONS[role.name.toLowerCase()]}` : ''}
+                </option>
+              ))}
             </select>
           </label>
           <label className="flex items-center gap-2 text-sm font-bold text-white/80 mt-2 cursor-pointer">
