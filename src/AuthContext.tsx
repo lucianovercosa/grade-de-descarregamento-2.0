@@ -11,6 +11,7 @@ export interface UserData {
   email: string;
   role: UserRole;
   name: string;
+  must_change_password?: boolean;
 }
 
 interface AuthContextType {
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: fbUser.email || '',
               role: userDoc.data().role,
               name: userDoc.data().name,
+              must_change_password: userDoc.data().must_change_password,
             });
           } else {
             // Try to find the user by email
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 email: fbUser.email || '',
                 role: data.role,
                 name: data.name || fbUser.displayName || fbUser.email || 'Usuário',
+                must_change_password: data.must_change_password,
               });
             } else if (fbUser.email === 'lucianovercosa@gmail.com') {
               try {

@@ -4,7 +4,6 @@ import { db, storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Vehicle, PROGRESS_OPTIONS, PROGRESS_PERCENT, AppUser, VehicleItem } from '../types';
 import { startOfDay, endOfDay, format } from 'date-fns';
-import { handleWhatsAppShare } from '../whatsapp';
 import { onSnapshot } from 'firebase/firestore';
 
 interface VehicleFormProps {
@@ -104,7 +103,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
   const [empilhadores, setEmpilhadores] = useState<AppUser[]>([]);
   const [productsList, setProductsList] = useState<{code: string, description: string}[]>([]);
   const [whatsappContacts, setWhatsappContacts] = useState<{name: string, phone: string}[]>([]);
-  const [alertVehicle, setAlertVehicle] = useState<Vehicle | null>(null);
+  
   const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
 
   useEffect(() => {
@@ -170,7 +169,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
   const handleAddItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...(prev.items || []), { ...emptyItem }]
+      items: [{ ...emptyItem }, ...(prev.items || [])]
     }));
   };
 
@@ -239,7 +238,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
           dataToSave.started_at = now;
         }
         await addDoc(collection(db, 'vehicles'), dataToSave);
-        setAlertVehicle(dataToSave as Vehicle);
+        
       }
       
       if (vehicleId) {
@@ -252,36 +251,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
     }
   };
 
-  if (alertVehicle) {
-    return (
-      <div className="bg-[#15151A] rounded-xl border border-white/10 p-6 max-w-sm shadow-sm text-white font-sans text-center">
-        <h3 className="text-lg font-bold text-white mb-2">Veículo Cadastrado!</h3>
-        <p className="text-white/60 text-xs mb-6">Deseja enviar um alerta no WhatsApp de novo cadastro?</p>
-        
-        <div className="flex flex-col gap-2 mb-6">
-          {alertVehicle.driver_phone && (
-            <button onClick={() => { handleWhatsAppShare(alertVehicle, alertVehicle.driver_phone); onSaved(); }} className="p-3 bg-green-600/20 border border-green-500/30 rounded flex justify-between items-center hover:bg-green-600/40 transition-colors">
-              <span className="text-xs font-bold text-white">Motorista</span>
-              <span className="text-[10px] font-mono text-green-400">{alertVehicle.driver_phone}</span>
-            </button>
-          )}
-          {whatsappContacts.map((c, i) => (
-            <button key={i} onClick={() => { handleWhatsAppShare(alertVehicle, c.phone); onSaved(); }} className="p-3 bg-green-600/20 border border-green-500/30 rounded flex justify-between items-center hover:bg-green-600/40 transition-colors">
-              <span className="text-xs font-bold text-white">{c.name}</span>
-              <span className="text-[10px] font-mono text-green-400">{c.phone}</span>
-            </button>
-          ))}
-          {!alertVehicle.driver_phone && whatsappContacts.length === 0 && (
-            <div className="text-white/40 text-xs italic">Nenhum contato cadastrado.</div>
-          )}
-        </div>
-
-        <button onClick={() => onSaved()} className="w-full p-3 bg-white/5 border border-white/10 rounded text-xs font-bold text-white/80 hover:bg-white/10 transition-colors uppercase tracking-widest">
-          Não Enviar / Concluir
-        </button>
-      </div>
-    );
-  }
+  
 
   return (
     <div className="bg-[#15151A] rounded-xl border border-white/10 p-6 max-w-4xl shadow-sm text-white font-sans">

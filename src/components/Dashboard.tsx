@@ -9,7 +9,6 @@ import { Truck, BellRing } from 'lucide-react';
 import { playNotificationSound, speakNotification } from '../audio';
 import * as XLSX from 'xlsx';
 
-import { handleWhatsAppShare } from '../whatsapp';
 
 interface DashboardProps {
   onEditVehicle: (id: string | null) => void;
@@ -42,7 +41,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [alertText, setAlertText] = useState<string | null>(null);
   const [whatsappContacts, setWhatsappContacts] = useState<{name: string, phone: string}[]>([]);
-  const [alertVehicle, setAlertVehicle] = useState<Vehicle | null>(null);
+  
   const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
   const prevStatuses = useRef<Record<string, string>>({});
   const [, setTick] = useState(0);
@@ -124,7 +123,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       await updateDoc(vehicleRef, updateData);
       const updatedVehicle = vehicles.find(v => v.id === vehicleId);
       if (updatedVehicle) {
-        setAlertVehicle({ ...updatedVehicle, progress_status: nextStatus });
+        
       }
     } catch (e: any) {
       alert('Erro ao atualizar: ' + e.message);
@@ -418,9 +417,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
         )}
 
         <div className="flex justify-end gap-2 mt-3">
-          <button onClick={() => handleWhatsAppShare(v)} className="py-2 px-4 bg-green-600/20 text-green-400 border border-green-500/30 text-[10px] font-bold uppercase tracking-widest rounded hover:bg-green-600/40 transition-colors flex items-center gap-1">
-            WhatsApp
-          </button>
+          
           <button onClick={() => onEditVehicle(v.id!)} className="py-2 px-4 bg-white/5 border border-white/20 text-[10px] font-bold uppercase tracking-widest rounded hover:bg-white/10 transition-colors">Editar</button>
           
           {confirmDeleteId === v.id ? (
@@ -502,7 +499,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
                   <td className="px-4 py-3 font-mono text-white/80">{totalTime}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => handleWhatsAppShare(v)} className="py-1.5 px-3 bg-green-600/20 text-green-400 border border-green-500/30 text-[9px] font-bold uppercase tracking-widest rounded hover:bg-green-600/40 transition-colors">WhatsApp</button>
+                      
                       <button onClick={() => onEditVehicle(v.id!)} className="py-1.5 px-3 bg-white/5 border border-white/20 text-[9px] font-bold uppercase tracking-widest rounded hover:bg-white/10 transition-colors">Editar</button>
                       {confirmDeleteId === v.id ? (
                         <div className="flex gap-1">
@@ -540,36 +537,6 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
           </div>
           <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
             <img src={previewAtt.url} alt="Preview" className="max-w-full max-h-full object-contain rounded" />
-          </div>
-        </div>
-      )}
-      {alertVehicle && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-[#15151A] rounded-xl border border-white/10 p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-2">Status Alterado!</h3>
-            <p className="text-white/60 text-xs mb-6">O status do veículo <span className="text-blue-400 font-bold">{alertVehicle.plate}</span> mudou para <span className="font-bold text-white">{alertVehicle.progress_status}</span>. Deseja enviar um alerta no WhatsApp?</p>
-            
-            <div className="flex flex-col gap-2 mb-6">
-              {alertVehicle.driver_phone && (
-                <button onClick={() => { handleWhatsAppShare(alertVehicle, alertVehicle.driver_phone); setAlertVehicle(null); }} className="p-3 bg-green-600/20 border border-green-500/30 rounded flex justify-between items-center hover:bg-green-600/40 transition-colors">
-                  <span className="text-xs font-bold text-white">Motorista</span>
-                  <span className="text-[10px] font-mono text-green-400">{alertVehicle.driver_phone}</span>
-                </button>
-              )}
-              {whatsappContacts.map((c, i) => (
-                <button key={i} onClick={() => { handleWhatsAppShare(alertVehicle, c.phone); setAlertVehicle(null); }} className="p-3 bg-green-600/20 border border-green-500/30 rounded flex justify-between items-center hover:bg-green-600/40 transition-colors">
-                  <span className="text-xs font-bold text-white">{c.name}</span>
-                  <span className="text-[10px] font-mono text-green-400">{c.phone}</span>
-                </button>
-              ))}
-              {!alertVehicle.driver_phone && whatsappContacts.length === 0 && (
-                <div className="text-white/40 text-xs italic text-center">Nenhum contato cadastrado.</div>
-              )}
-            </div>
-
-            <button onClick={() => setAlertVehicle(null)} className="w-full p-3 bg-white/5 border border-white/10 rounded text-xs font-bold text-white/80 hover:bg-white/10 transition-colors uppercase tracking-widest">
-              Fechar
-            </button>
           </div>
         </div>
       )}

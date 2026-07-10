@@ -8,7 +8,7 @@ import { TVMode } from './components/TVMode';
 import { UsersList } from './components/UsersList';
 import { PublicStatus } from './components/PublicStatus';
 import { ProductsManager } from './components/ProductsManager';
-import { WhatsAppSettings } from './components/WhatsAppSettings';
+import { ChangePassword } from './components/ChangePassword';
 
 function MainApp() {
   const { user, loading } = useAuth();
@@ -19,6 +19,10 @@ function MainApp() {
 
   if (!user) {
     return <Login />;
+  }
+
+  if (user.must_change_password) {
+    return <ChangePassword />;
   }
 
   if (user.role === 'tv' || activeView === 'tv') {
@@ -44,10 +48,6 @@ function MainApp() {
     
     if (activeView === 'users') {
       return <UsersList />;
-    }
-
-    if (activeView === 'whatsapp') {
-      return <WhatsAppSettings />;
     }
 
     if (activeView === 'products') {

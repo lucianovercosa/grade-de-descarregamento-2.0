@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, secondaryAuth } from '../firebase';
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { AppUser } from '../types';
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
@@ -14,6 +15,7 @@ export function UsersList() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'users'));
@@ -33,17 +35,31 @@ export function UsersList() {
     const name = (form.elements.namedItem('name') as HTMLInputElement).value;
     const role = (form.elements.namedItem('role') as HTMLSelectElement).value as AppUser['role'];
     const active = (form.elements.namedItem('active') as HTMLInputElement).checked;
-    
+    const passwordInput = form.elements.namedItem('password') as HTMLInputElement;
+    const password = passwordInput ? passwordInput.value : '';
+
+    setLoading(true);
     try {
       if (isAdding) {
-        // Create user with email as the ID initially, AuthContext will migrate it when they login
-        const newDocRef = doc(db, 'users', email);
+        if (!password || password.length < 6) {
+          alert('A senha deve ter pelo menos 6 caracteres.');
+          setLoading(false);
+          return;
+        }
+        
+        // Create in secondary auth
+        const userCred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        const uid = userCred.user.uid;
+        await signOut(secondaryAuth); // Sign out the secondary instance
+
+        const newDocRef = doc(db, 'users', uid);
         await setDoc(newDocRef, {
           email,
           username: email.split('@')[0],
           name,
           role,
           active,
+          must_change_password: true,
           created_at: new Date().toISOString()
         });
       } else if (editingUser?.id) {
@@ -56,9 +72,11 @@ export function UsersList() {
       }
       setIsAdding(false);
       setEditingUser(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Erro ao salvar usuário.');
+      alert('Erro ao salvar usuário: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,6 +101,13 @@ export function UsersList() {
             Email
             <input name="email" type="email" required defaultValue={user.email} disabled={!isAdding} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal disabled:opacity-50 disabled:bg-black/20" />
           </label>
+          {isAdding && (
+            <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
+              Senha Inicial (Padrão)
+              <input name="password" type="text" required={isAdding} defaultValue="123456" className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" />
+              <span className="text-[9px] normal-case text-white/30">O usuário será solicitado a alterar esta senha no primeiro login.</span>
+            </label>
+          )}
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             Nome Completo
             <input name="name" required defaultValue={user.name} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" />
@@ -102,8 +127,8 @@ export function UsersList() {
           </label>
           
           <div className="flex gap-3 mt-4">
-            <button type="submit" className="bg-blue-600 text-white text-xs font-bold py-3 px-6 rounded hover:bg-blue-700 transition-colors uppercase tracking-wider">
-              Salvar Usuário
+            <button type="submit" disabled={loading} className="bg-blue-600 disabled:opacity-50 text-white text-xs font-bold py-3 px-6 rounded hover:bg-blue-700 transition-colors uppercase tracking-wider">
+              {loading ? "Aguarde..." : "Salvar Usuário"}
             </button>
             <button type="button" onClick={() => { setIsAdding(false); setEditingUser(null); }} className="bg-white/5 border border-white/10 text-white text-xs font-bold py-3 px-6 rounded hover:bg-white/10 transition-colors uppercase tracking-wider">
               Cancelar
