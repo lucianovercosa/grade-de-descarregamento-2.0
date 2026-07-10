@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { auth } from '../firebase';
 import { Logo } from './Logo';
 
@@ -20,6 +20,19 @@ export function Login() {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login com o Google.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnonymousLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await signInAnonymously(auth);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao entrar como visitante.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -102,6 +115,10 @@ export function Login() {
         </div>
 
         <div className="flex flex-col gap-4">
+          <button onClick={handleAnonymousLogin} disabled={loading} className="bg-blue-600/20 text-blue-400 text-xs font-bold py-3 px-4 border border-blue-500/30 rounded hover:bg-blue-600/30 uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            Entrar como Visitante
+          </button>
+          
           <button onClick={handleGoogleLogin} disabled={loading} className="bg-white/5 text-white text-xs font-bold py-3 px-4 border border-white/10 rounded hover:bg-white/10 uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>

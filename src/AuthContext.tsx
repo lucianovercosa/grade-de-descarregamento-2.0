@@ -28,6 +28,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
+        if (fbUser.isAnonymous) {
+          setUser({
+            uid: fbUser.uid,
+            email: 'visitante@anonimo.com',
+            role: 'admin',
+            name: 'Visitante (Admin)',
+          });
+          setLoading(false);
+          return;
+        }
+
         // Assume users have a document in 'users' collection
         try {
           const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
