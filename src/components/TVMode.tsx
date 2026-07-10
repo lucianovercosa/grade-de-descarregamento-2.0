@@ -75,9 +75,9 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#E0E0E0] p-8 font-sans overflow-y-auto relative">
       {alertText && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="bg-yellow-500/20 border-2 border-yellow-400 text-yellow-400 font-bold px-8 py-5 rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.4)] flex items-center gap-4 max-w-[90vw] text-center">
-            <BellRing size={32} className="animate-bounce" />
+        <div className="fixed bottom-8 right-8 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-yellow-500/20 border-2 border-yellow-400 text-yellow-400 font-bold px-8 py-5 rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.4)] flex items-center gap-4 max-w-[90vw] text-left">
+            <BellRing size={32} className="animate-bounce shrink-0" />
             <span className="text-xl md:text-3xl tracking-wide">{alertText}</span>
           </div>
         </div>

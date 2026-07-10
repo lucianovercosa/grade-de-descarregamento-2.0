@@ -542,9 +542,9 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       )}
 
       {alertText && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="bg-yellow-500/20 border-2 border-yellow-400 text-yellow-400 font-bold px-6 py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.3)] flex items-center gap-3 max-w-[90vw] text-center">
-            <BellRing size={24} className="animate-bounce" />
+        <div className="fixed bottom-8 right-8 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-yellow-500/20 border-2 border-yellow-400 text-yellow-400 font-bold px-6 py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.3)] flex items-center gap-3 max-w-[90vw] text-left">
+            <BellRing size={24} className="animate-bounce shrink-0" />
             <span className="text-sm md:text-base">{alertText}</span>
           </div>
         </div>
