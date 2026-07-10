@@ -20,7 +20,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#0A0A0B] text-[#E0E0E0] font-sans">
-      <aside className="w-full md:w-64 border-r border-white/10 flex flex-col bg-[#0F0F12]">
+      <aside className="w-full md:w-52 shrink-0 border-r border-white/10 flex flex-col bg-[#0F0F12]">
         <div className="p-6 border-b border-white/10">
           <Logo />
         </div>

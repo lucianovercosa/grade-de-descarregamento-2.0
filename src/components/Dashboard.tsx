@@ -274,12 +274,12 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
             <div className="text-[12px] text-[#39FF14] drop-shadow-[0_0_8px_rgba(57,255,20,0.8)] uppercase tracking-widest font-bold mb-1">{v.daily_sequence}º CARRO</div>
             <div className="text-2xl font-mono text-blue-400 font-bold truncate">{v.plate}</div>
             <div className="text-xs flex flex-col gap-1.5 mt-2">
-              <div className="flex items-baseline gap-1"><span className="text-white/40 shrink-0 w-[110px]">Motorista:</span> <span className="font-bold text-white break-words" title={v.driver || 'Não informado'}>{v.driver || 'Não informado'}</span></div>
+              <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Motorista:</span> <span className="font-bold text-white truncate" title={v.driver || 'Não informado'}>{v.driver || 'Não informado'}</span></div>
               {!isSimple && (
                 <>
-                  <div className="flex items-baseline gap-1"><span className="text-white/40 shrink-0 w-[110px]">Transportador:</span> <span className="font-bold text-white break-words" title={v.transporter || '-'}>{v.transporter || '-'}</span></div>
-                  <div className="flex items-baseline gap-1"><span className="text-white/40 shrink-0 w-[110px]">Fornecedor:</span> <span className="font-bold text-white break-words" title={v.supplier || '-'}>{v.supplier || '-'}</span></div>
-                  <div className="flex items-baseline gap-1"><span className="text-white/40 shrink-0 w-[110px]">Resp. Descarreg.:</span> <span className="font-bold text-white break-words" title={v.forklift_name || 'Nenhum'}>{v.forklift_name || 'Nenhum'}</span></div>
+                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Transportador:</span> <span className="font-bold text-white truncate" title={v.transporter || '-'}>{v.transporter || '-'}</span></div>
+                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Fornecedor:</span> <span className="font-bold text-white truncate" title={v.supplier || '-'}>{v.supplier || '-'}</span></div>
+                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Resp. Descarreg.:</span> <span className="font-bold text-white truncate" title={v.forklift_name || 'Nenhum'}>{v.forklift_name || 'Nenhum'}</span></div>
                 </>
               )}
             </div>
@@ -552,7 +552,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
         </div>
       )}
 
-      <header className="border-b border-white/10 bg-[#0F0F12]/50 backdrop-blur flex flex-col md:flex-row items-center justify-between p-4 gap-4 rounded-xl">
+      <header className="border-b border-white/10 bg-[#0F0F12]/50 backdrop-blur flex flex-col md:flex-row items-center justify-between p-4 gap-4 rounded-xl relative z-50">
         <div>
           <h1 className="text-sm font-bold text-white/80">Monitor de Operações</h1>
           <p className="text-[10px] text-white/40 uppercase tracking-widest">Acompanhe os veículos por etapa e tempo de operação.</p>
