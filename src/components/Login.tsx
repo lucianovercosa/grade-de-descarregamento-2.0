@@ -6,7 +6,6 @@ import { Logo } from './Logo';
 export function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,35 +25,20 @@ export function Login() {
     }
   };
 
-  const handleAnonymousLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await signInAnonymously(auth);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao entrar como visitante.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Preencha email e senha.');
       return;
     }
+
     setError('');
     setLoading(true);
+
     try {
-      if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
-      setError(err.message || (isSignUp ? 'Erro ao criar conta.' : 'Erro ao fazer login.'));
+      setError(err.message || 'Erro ao fazer login.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -70,7 +54,7 @@ export function Login() {
           {error && <div className="text-red-400 min-h-[20px] text-xs">{error}</div>}
           
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Email
+            Usuário ou Gmail
             <input 
               type="email" 
               value={email}
@@ -79,6 +63,7 @@ export function Login() {
               required 
             />
           </label>
+
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             Senha
             <input 
@@ -91,19 +76,9 @@ export function Login() {
           </label>
 
           <button type="submit" disabled={loading} className="mt-2 bg-blue-600 text-white text-xs font-bold py-3 px-4 rounded hover:bg-blue-700 uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            {loading ? 'Aguarde...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
+            {loading ? 'Aguarde...' : 'Entrar'}
           </button>
         </form>
-
-        <div className="mt-4 text-center">
-          <button 
-            type="button" 
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-[10px] text-white/40 hover:text-white uppercase tracking-widest transition-colors font-bold"
-          >
-            {isSignUp ? 'Já tenho uma conta (Login)' : 'Criar nova conta com email'}
-          </button>
-        </div>
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
@@ -114,11 +89,7 @@ export function Login() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <button onClick={handleAnonymousLogin} disabled={loading} className="bg-blue-600/20 text-blue-400 text-xs font-bold py-3 px-4 border border-blue-500/30 rounded hover:bg-blue-600/30 uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            Entrar como Visitante
-          </button>
-          
+        <div className="flex flex-col gap-4">          
           <button onClick={handleGoogleLogin} disabled={loading} className="bg-white/5 text-white text-xs font-bold py-3 px-4 border border-white/10 rounded hover:bg-white/10 uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>

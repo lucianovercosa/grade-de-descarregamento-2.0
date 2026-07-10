@@ -110,7 +110,7 @@ export function UsersList() {
         <h2 className="text-sm font-bold text-white/80 mb-6 uppercase tracking-widest">{isAdding ? 'Novo Usuário' : 'Editar Usuário'}</h2>
         <form onSubmit={handleSave} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Email
+            Usuário ou Gmail
             <input name="email" type="email" required defaultValue={user.email} disabled={!isAdding} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal disabled:opacity-50 disabled:bg-black/20" />
           </label>
           {isAdding && (
@@ -118,6 +118,15 @@ export function UsersList() {
               Senha Inicial (Padrão)
               <input name="password" type="text" required={isAdding} defaultValue="123456" className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" />
               <span className="text-[9px] normal-case text-white/30">O usuário será solicitado a alterar esta senha no primeiro login.</span>
+            </label>
+          )}
+          {!isAdding && (
+            <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
+              Nova Senha
+              <input name="password_disabled" type="text" placeholder="Use o botão 'REDEFINIR SENHA'" disabled className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white/30 font-normal cursor-not-allowed" />
+              <span className="text-[9px] normal-case text-orange-400/80 mt-1">
+                Por segurança, o Firebase não permite alterar a senha de outro usuário diretamente. Use o botão <strong>REDEFINIR SENHA</strong> abaixo para enviar um email de recuperação.
+              </span>
             </label>
           )}
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
