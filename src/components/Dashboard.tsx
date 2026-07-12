@@ -623,11 +623,11 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-4">
         <div 
           onClick={() => setSelectedStatuses([])}
-          className={`cursor-pointer bg-[#15151A] rounded-xl border shadow-[0_0_15px_rgba(255,255,255,0.1)] border-white/20 p-4 flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#1A1A20] relative overflow-hidden ${selectedStatuses.length === 0 ? 'ring-2 ring-white/50' : 'opacity-60'}`}
+          className={`cursor-pointer bg-[#15151A] rounded-xl border shadow-[0_0_15px_rgba(255,255,255,0.1)] border-white/20 p-2 h-16 flex flex-col items-center justify-center gap-1 transition-all hover:bg-[#1A1A20] relative overflow-hidden ${selectedStatuses.length === 0 ? 'ring-2 ring-white/50' : 'opacity-60'}`}
         >
           <div className="absolute top-0 left-0 w-full h-1 bg-white/40"></div>
-          <span className="text-3xl font-bold font-mono text-white/80">{baseFiltered.length}</span>
-          <span className="text-[9px] uppercase tracking-wider text-white/60 text-center font-bold">TODOS</span>
+          <span className="text-[9px] uppercase tracking-wider text-white/60 text-center font-bold leading-tight">TODOS</span>
+          <span className="text-xl font-bold font-mono text-white/80">{baseFiltered.length}</span>
         </div>
         {PROGRESS_OPTIONS.map(status => {
           const count = baseFiltered.filter(v => v.progress_status === status).length;
@@ -660,11 +660,11 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
                   prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
                 );
               }}
-              className={`cursor-pointer bg-[#15151A] rounded-xl border ${cardGlow} p-4 flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#1A1A20] relative overflow-hidden ${isSelected ? 'ring-2 ring-white/50' : (selectedStatuses.length > 0 ? 'opacity-40' : '')}`}
+              className={`cursor-pointer bg-[#15151A] rounded-xl border ${cardGlow} p-2 h-16 flex flex-col items-center justify-center gap-1 transition-all hover:bg-[#1A1A20] relative overflow-hidden ${isSelected ? 'ring-2 ring-white/50' : (selectedStatuses.length > 0 ? 'opacity-40' : '')}`}
             >
               <div className={`absolute top-0 left-0 w-full h-1 ${textColor.replace('text-', 'bg-').replace('400', '500')}`}></div>
-              <span className={`text-3xl font-bold font-mono ${textColor}`}>{count}</span>
-              <span className="text-[9px] uppercase tracking-wider text-white/60 text-center font-bold">{status}</span>
+              <span className="text-[9px] uppercase tracking-wider text-white/60 text-center font-bold leading-tight">{status}</span>
+              <span className={`text-xl font-bold font-mono ${textColor}`}>{count}</span>
             </div>
           )
         })}

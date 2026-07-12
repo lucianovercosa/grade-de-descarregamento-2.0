@@ -118,8 +118,12 @@ export function UsersList() {
       setIsAdding(false);
       setEditingUser(null);
     } catch (err: any) {
-      console.error(err);
-      alert('Erro ao salvar usuário: ' + err.message);
+      if (err.code === 'auth/email-already-in-use') {
+        alert('Este e-mail já está registrado na autenticação. Como os usuários não podem ser excluídos permanentemente sem um servidor, por favor, use um e-mail diferente (ex: nome+1@email.com) ou restaure o usuário.');
+      } else {
+        console.error(err);
+        alert('Erro ao salvar usuário: ' + err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -131,9 +135,9 @@ export function UsersList() {
     try {
       await deleteDoc(doc(db, 'users', id));
       setDeletingUserId(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Erro ao remover usuário.');
+      alert('Erro ao remover usuário: ' + err.message);
     }
   };
 

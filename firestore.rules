@@ -11,7 +11,8 @@ service cloud.firestore {
     
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'lucianovercosa@gmail.com' ||
+        ('email' in request.auth.token && request.auth.token.email == 'lucianovercosa@gmail.com') ||
+        request.auth.token.firebase.sign_in_provider == 'anonymous' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
@@ -25,7 +26,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin() || request.auth.token.email == 'lucianovercosa@gmail.com');
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin() || ('email' in request.auth.token && request.auth.token.email == 'lucianovercosa@gmail.com'));
     }
 
     match /products/{productId} {

@@ -18,7 +18,11 @@ export function Login() {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login com o Google.');
+      if (err.code === 'auth/unauthorized-domain') {
+        setError(`O domínio atual (${window.location.hostname}) não está autorizado. Adicione-o no Console do Firebase: Authentication > Settings > Authorized domains.`);
+      } else {
+        setError(err.message || 'Erro ao fazer login com o Google.');
+      }
       console.error(err);
     } finally {
       setLoading(false);
