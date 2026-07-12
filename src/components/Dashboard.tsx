@@ -551,19 +551,19 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
           </div>
         </div>
       )}
-
-      <header className="border-b border-white/10 bg-[#0F0F12]/50 backdrop-blur flex flex-col md:flex-row items-center justify-between p-4 gap-4 rounded-xl relative z-50">
-        <div>
+      
+      <header className="border-b border-white/10 bg-[#0F0F12]/50 backdrop-blur flex flex-col xl:flex-row items-start xl:items-center justify-between p-4 gap-4 rounded-xl relative z-50">
+        <div className="shrink-0">
           <h1 className="text-sm font-bold text-white/80">Monitor de Operações</h1>
           <p className="text-[10px] text-white/40 uppercase tracking-widest">Acompanhe os veículos por etapa e tempo de operação.</p>
         </div>
-        <div className="flex gap-3 items-center flex-wrap">
-          <button onClick={handleExportExcel} className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-500/30 text-xs font-bold rounded hover:bg-green-600/30 transition-colors uppercase tracking-wider flex items-center gap-2">
+        <div className="flex gap-2 items-center flex-wrap lg:flex-nowrap w-full xl:w-auto justify-start xl:justify-end">
+          <button onClick={handleExportExcel} className="shrink-0 whitespace-nowrap px-3 py-1.5 bg-green-600/20 text-green-400 border border-green-500/30 text-xs font-bold rounded hover:bg-green-600/30 transition-colors uppercase tracking-wider flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar Excel
           </button>
           {user?.role === 'admin' && (
-            <button onClick={() => onEditVehicle(null)} className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition-colors uppercase tracking-wider">
+            <button onClick={() => onEditVehicle(null)} className="shrink-0 whitespace-nowrap px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition-colors uppercase tracking-wider">
               Novo Descarrego
             </button>
           )}
@@ -572,11 +572,11 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
             placeholder="Buscar placa..." 
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white"
+            className="w-28 sm:w-32 shrink-0 bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white"
           />
 
-          <details className="relative group z-50">
-            <summary className="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs text-white cursor-pointer list-none flex items-center gap-2 focus:outline-none focus:border-blue-500">
+          <details className="relative group z-50 shrink-0">
+            <summary className="bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs text-white cursor-pointer list-none flex items-center gap-1 focus:outline-none focus:border-blue-500 whitespace-nowrap">
               <span>Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}</span>
               <span className="group-open:rotate-180 transition-transform text-[8px]">▼</span>
             </summary>
@@ -598,24 +598,44 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
             </div>
           </details>
 
-          <DatePicker 
-            multiple
-            value={selectedDates}
-            onChange={(dates) => {
-              const newDates = (dates || []).map((d: any) => d.format?.('YYYY-MM-DD') || d.toString());
-              setSelectedDates(newDates);
-            }}
-            format="DD/MM/YYYY"
-            placeholder="Datas..."
-            inputClass="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 w-40 cursor-pointer"
-            className="bg-dark"
-          />
+          <div className="shrink-0">
+            <DatePicker 
+              multiple
+              value={selectedDates.map(d => {
+                const [y, m, day] = d.split('-');
+                return `${day}/${m}/${y}`;
+              })}
+              onChange={(dates) => {
+                const datesArray = Array.isArray(dates) ? dates : [dates].filter(Boolean);
+                const newDates = datesArray.map((d: any) => d?.format?.('YYYY-MM-DD') || d?.toString());
+                setSelectedDates(newDates);
+              }}
+              format="DD/MM/YYYY"
+              placeholder="Datas..."
+              inputClass="bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 w-32 cursor-pointer"
+              className="bg-dark"
+            />
+          </div>
 
-          <select value={view} onChange={(e) => setView(e.target.value as any)} className="bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white">
+          <select value={view} onChange={(e) => setView(e.target.value as any)} className="shrink-0 bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white">
             <option value="cards">Cards Completos</option>
             <option value="simple">Cards Simples</option>
             <option value="list">Lista</option>
           </select>
+
+          {(filterText || selectedStatuses.length > 0 || selectedDates.length > 0) && (
+            <button 
+              onClick={() => {
+                setFilterText('');
+                setSelectedStatuses([]);
+                setSelectedDates([]);
+              }}
+              className="shrink-0 whitespace-nowrap px-3 py-1.5 bg-red-600/20 text-red-400 border border-red-500/30 text-xs font-bold rounded hover:bg-red-600/30 transition-colors uppercase tracking-wider flex items-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              Limpar
+            </button>
+          )}
         </div>
       </header>
 
