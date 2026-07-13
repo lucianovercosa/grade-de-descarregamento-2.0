@@ -64,7 +64,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       console.log('Contacts listener error:', error);
     });
 
-    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'desc'));
+    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
       
@@ -322,12 +322,12 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
         <div className="flex justify-between items-center bg-black/20 border border-white/5 p-2 rounded mt-2">
           <div className="flex flex-col">
             <span className="text-[9px] text-white/40 uppercase font-bold tracking-widest">Entrada</span>
-            <span className="text-xs font-mono text-white/80">{v.started_at ? format(parseISO(v.started_at), 'HH:mm') : '-'}</span>
+            <span className="text-xs font-mono text-white/80">{v.started_at ? format(parseISO(v.started_at), 'dd/MM HH:mm') : '-'}</span>
           </div>
           {v.finished_at && (
             <div className="flex flex-col text-right">
               <span className="text-[9px] text-white/40 uppercase font-bold tracking-widest">Término</span>
-              <span className="text-xs font-mono text-[#39FF14] drop-shadow-[0_0_8px_rgba(57,255,20,0.8)]">{format(parseISO(v.finished_at), 'HH:mm')}</span>
+              <span className="text-xs font-mono text-[#39FF14] drop-shadow-[0_0_8px_rgba(57,255,20,0.8)]">{format(parseISO(v.finished_at), 'dd/MM HH:mm')}</span>
             </div>
           )}
         </div>

@@ -40,7 +40,7 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'desc'));
+    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
       const filtered = data.filter(v => v.progress_status !== 'RECEBIDO');
@@ -202,12 +202,12 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
                   <div className="flex flex-col">
                     <span className="text-[8px] text-white/40 uppercase tracking-widest font-bold">Entrada</span>
-                    <span className="font-mono text-white/80 text-[10px]">{v.started_at ? format(parseISO(v.started_at), 'HH:mm') : '-'}</span>
+                    <span className="font-mono text-white/80 text-[10px]">{v.started_at ? format(parseISO(v.started_at), 'dd/MM HH:mm') : '-'}</span>
                   </div>
                   {v.finished_at && (
                     <div className="flex flex-col text-right">
                       <span className="text-[8px] text-white/40 uppercase tracking-widest font-bold">Término</span>
-                      <span className="font-mono text-[#39FF14] text-[10px] drop-shadow-[0_0_8px_rgba(57,255,20,0.8)]">{format(parseISO(v.finished_at), 'HH:mm')}</span>
+                      <span className="font-mono text-[#39FF14] text-[10px] drop-shadow-[0_0_8px_rgba(57,255,20,0.8)]">{format(parseISO(v.finished_at), 'dd/MM HH:mm')}</span>
                     </div>
                   )}
                 </div>
