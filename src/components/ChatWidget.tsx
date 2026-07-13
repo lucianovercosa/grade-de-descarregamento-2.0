@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import { ChatMessage } from '../types';
+import { AppUser, ChatMessage } from '../types';
 import { MessageSquare, X, Send } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
@@ -11,19 +11,34 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [targetUserId, setTargetUserId] = useState<string>('all');
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (!user) return;
     
+    const qUsers = query(collection(db, 'users'), orderBy('name', 'asc'));
+    const unsubscribeUsers = onSnapshot(qUsers, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
+      setUsers(data);
+    }, (error) => {
+      console.error("Error fetching chat users:", error);
+    });
+
     const q = query(collection(db, 'chat_messages'), orderBy('created_at', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
       setMessages(data);
+    }, (error) => {
+      console.error("Error fetching chat messages:", error);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeUsers();
+      unsubscribe();
+    };
   }, [user]);
   
   const prevMessagesLength = useRef(0);
@@ -33,13 +48,24 @@ export function ChatWidget() {
   useEffect(() => {
     if (messages.length > prevMessagesLength.current) {
       if (!isOpen) {
-        const newMessagesCount = messages.length - prevMessagesLength.current;
-        setUnreadCount(prev => prev + newMessagesCount);
+        let newUnread = 0;
+        let latestTargetedMsg = null;
         
-        // Show preview of the latest message
-        const latestMsg = messages[messages.length - 1];
-        if (latestMsg && latestMsg.user_id !== user?.uid) {
-          setPreviewMessage(latestMsg);
+        for (let i = prevMessagesLength.current; i < messages.length; i++) {
+          const msg = messages[i];
+          if (msg.user_id !== user?.uid) {
+            newUnread++;
+            latestTargetedMsg = msg;
+          }
+        }
+        
+        if (newUnread > 0) {
+          setUnreadCount(prev => prev + newUnread);
+        }
+        
+        // Show preview of the latest relevant message
+        if (latestTargetedMsg) {
+          setPreviewMessage(latestTargetedMsg);
           if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
           previewTimeoutRef.current = setTimeout(() => {
             setPreviewMessage(null);
@@ -74,11 +100,19 @@ export function ChatWidget() {
     const text = newMessage.trim();
     setNewMessage('');
     
+    let targetName = null;
+    if (targetUserId !== 'all') {
+      const targetUser = users.find(u => u.id === targetUserId);
+      if (targetUser) targetName = targetUser.name;
+    }
+    
     try {
       await addDoc(collection(db, 'chat_messages'), {
         text,
         user_id: user.uid,
         user_name: user.name,
+        target_user_id: targetUserId !== 'all' ? targetUserId : null,
+        target_user_name: targetName,
         created_at: new Date().toISOString()
       });
     } catch (error) {
@@ -138,7 +172,12 @@ export function ChatWidget() {
               return (
                 <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                   {!isMe && <span className="text-[10px] text-white/40 mb-1 ml-1">{msg.user_name}</span>}
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-white/90 rounded-tl-none'}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-white/90 rounded-tl-none'} ${msg.target_user_id ? 'ring-2 ring-yellow-500/50 bg-yellow-500/10' : ''}`}>
+                    {msg.target_user_name && (
+                      <span className="text-xs font-bold text-blue-300 block mb-1">
+                        @{msg.target_user_name}
+                      </span>
+                    )}
                     <p className="text-sm break-words">{msg.text}</p>
                   </div>
                   <span className="text-[9px] text-white/30 mt-1 mx-1">{timeStr}</span>
@@ -148,7 +187,17 @@ export function ChatWidget() {
             <div ref={messagesEndRef} />
           </div>
           
-          <div className="p-3 border-t border-white/10 bg-[#0F0F12] rounded-b-xl">
+          <div className="p-3 border-t border-white/10 bg-[#0F0F12] rounded-b-xl flex flex-col gap-2">
+            <select
+              value={targetUserId}
+              onChange={(e) => setTargetUserId(e.target.value)}
+              className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 w-full"
+            >
+              <option value="all">Todos</option>
+              {users.filter(u => u.id !== user.uid).map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
             <form onSubmit={handleSend} className="flex gap-2">
               <input
                 type="text"

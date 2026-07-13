@@ -87,5 +87,7 @@ export interface ChatMessage {
   text: string;
   user_id: string;
   user_name: string;
+  target_user_id?: string;
+  target_user_name?: string;
   created_at: string;
 }
