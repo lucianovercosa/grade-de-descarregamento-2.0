@@ -114,7 +114,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       
       if (nextStatus === 'EM ANALISE') {
         updateData.analysis_started_at = now;
-      } else if (nextStatus === 'AGUARDO DESCARGA') {
+      } else if (nextStatus === 'ANALISE CONCLUIDO' || nextStatus === 'AGUARDO DESCARGA') {
         updateData.analysis_finished_at = now;
       } else if (nextStatus === 'EM DESCARREGO') {
         updateData.unload_started_at = now;
@@ -185,6 +185,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
         'Motorista': v.driver || '-',
         'Transportador': v.transporter || '-',
         'Fornecedor': v.supplier || '-',
+        'Nota Fiscal': v.invoice_number || '-',
         'Status': v.progress_status,
         'Entrada': v.started_at ? format(parseISO(v.started_at), 'dd/MM/yyyy HH:mm') : '-',
         'Saída': v.finished_at ? format(parseISO(v.finished_at), 'dd/MM/yyyy HH:mm') : '-',
@@ -232,6 +233,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       v.progress_status === 'SEM ESPAÇO' ? 'border-red-500' :
       v.progress_status === 'VEÍCULO RETORNOU' ? 'border-yellow-500' :
       v.progress_status === 'EM ANALISE' ? 'border-blue-500' :
+      v.progress_status === 'ANALISE CONCLUIDO' ? 'border-purple-500' :
       v.progress_status === 'AGUARDO DESCARGA' ? 'border-cyan-500' :
       v.progress_status === 'EM DESCARREGO' ? 'border-blue-400' :
       'border-green-500';
@@ -241,6 +243,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       v.progress_status === 'SEM ESPAÇO' ? 'shadow-[0_0_15px_rgba(239,68,68,0.2)] border-red-500/30' :
       v.progress_status === 'VEÍCULO RETORNOU' ? 'shadow-[0_0_15px_rgba(234,179,8,0.2)] border-yellow-500/30' :
       v.progress_status === 'EM ANALISE' ? 'shadow-[0_0_15px_rgba(59,130,246,0.2)] border-blue-500/30' :
+      v.progress_status === 'ANALISE CONCLUIDO' ? 'shadow-[0_0_15px_rgba(168,85,247,0.2)] border-purple-500/30' :
       v.progress_status === 'AGUARDO DESCARGA' ? 'shadow-[0_0_15px_rgba(6,182,212,0.2)] border-cyan-500/30' :
       v.progress_status === 'EM DESCARREGO' ? 'shadow-[0_0_15px_rgba(96,165,250,0.2)] border-blue-400/30' :
       'shadow-[0_0_15px_rgba(34,197,94,0.2)] border-green-500/30';
@@ -250,6 +253,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       v.progress_status === 'SEM ESPAÇO' ? 'bg-red-500/20 text-red-400' :
       v.progress_status === 'VEÍCULO RETORNOU' ? 'bg-yellow-500/20 text-yellow-400' :
       v.progress_status === 'EM ANALISE' ? 'bg-blue-500/20 text-blue-400' :
+      v.progress_status === 'ANALISE CONCLUIDO' ? 'bg-purple-500/20 text-purple-400' :
       v.progress_status === 'AGUARDO DESCARGA' ? 'bg-cyan-500/20 text-cyan-400' :
       v.progress_status === 'EM DESCARREGO' ? 'bg-blue-500/20 text-blue-400' :
       'bg-green-500/20 text-green-400';
@@ -279,6 +283,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
                 <>
                   <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Transportador:</span> <span className="font-bold text-white truncate" title={v.transporter || '-'}>{v.transporter || '-'}</span></div>
                   <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Fornecedor:</span> <span className="font-bold text-white truncate" title={v.supplier || '-'}>{v.supplier || '-'}</span></div>
+                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Nota Fiscal:</span> <span className="font-bold text-white truncate" title={v.invoice_number || '-'}>{v.invoice_number || '-'}</span></div>
                   <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Resp. Descarreg.:</span> <span className="font-bold text-white truncate" title={v.forklift_name || 'Nenhum'}>{v.forklift_name || 'Nenhum'}</span></div>
                 </>
               )}
@@ -444,6 +449,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
               <th className="px-4 py-3 font-bold">Seq</th>
               <th className="px-4 py-3 font-bold">Placa</th>
               <th className="px-4 py-3 font-bold">Motorista/Transp.</th>
+              <th className="px-4 py-3 font-bold">Forn./NF</th>
               <th className="px-4 py-3 font-bold">Status</th>
               <th className="px-4 py-3 font-bold">Espera</th>
               <th className="px-4 py-3 font-bold">Análise</th>
@@ -459,6 +465,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
                 v.progress_status === 'SEM ESPAÇO' ? 'bg-red-500/20 text-red-400' :
                 v.progress_status === 'VEÍCULO RETORNOU' ? 'bg-yellow-500/20 text-yellow-400' :
                 v.progress_status === 'EM ANALISE' ? 'bg-blue-500/20 text-blue-400' :
+                v.progress_status === 'ANALISE CONCLUIDO' ? 'bg-purple-500/20 text-purple-400' :
                 v.progress_status === 'AGUARDO DESCARGA' ? 'bg-cyan-500/20 text-cyan-400' :
                 v.progress_status === 'EM DESCARREGO' ? 'bg-blue-500/20 text-blue-400' :
                 'bg-green-500/20 text-green-400';
@@ -481,6 +488,10 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
                   <td className="px-4 py-3">
                     <div className="font-bold text-white">{v.driver || '-'}</div>
                     <div className="text-white/40 text-[9px] mt-0.5">{v.transporter || '-'}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="font-bold text-white">{v.supplier || '-'}</div>
+                    <div className="text-white/40 text-[9px] mt-0.5">{v.invoice_number || '-'}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="bg-black/40 p-1 border border-white/10 rounded w-fit">
@@ -657,6 +668,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
             status === 'SEM ESPAÇO' ? 'shadow-[0_0_15px_rgba(239,68,68,0.15)] border-red-500/30' :
             status === 'VEÍCULO RETORNOU' ? 'shadow-[0_0_15px_rgba(234,179,8,0.15)] border-yellow-500/30' :
             status === 'EM ANALISE' ? 'shadow-[0_0_15px_rgba(59,130,246,0.15)] border-blue-500/30' :
+            status === 'ANALISE CONCLUIDO' ? 'shadow-[0_0_15px_rgba(168,85,247,0.15)] border-purple-500/30' :
             status === 'AGUARDO DESCARGA' ? 'shadow-[0_0_15px_rgba(6,182,212,0.15)] border-cyan-500/30' :
             status === 'EM DESCARREGO' ? 'shadow-[0_0_15px_rgba(96,165,250,0.15)] border-blue-400/30' :
             'shadow-[0_0_15px_rgba(34,197,94,0.15)] border-green-500/30';
@@ -666,6 +678,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
             status === 'SEM ESPAÇO' ? 'text-red-400' :
             status === 'VEÍCULO RETORNOU' ? 'text-yellow-400' :
             status === 'EM ANALISE' ? 'text-blue-400' :
+            status === 'ANALISE CONCLUIDO' ? 'text-purple-400' :
             status === 'AGUARDO DESCARGA' ? 'text-cyan-400' :
             status === 'EM DESCARREGO' ? 'text-blue-400' :
             'text-green-400';
