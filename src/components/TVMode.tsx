@@ -31,6 +31,7 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [alertText, setAlertText] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [sortBy, setSortBy] = useState<'chronological' | 'sequenceDesc' | 'sequenceAsc'>('chronological');
 
   const prevStatuses = useRef<Record<string, string>>({});
 
@@ -72,6 +73,16 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
     return unsubscribe;
   }, []);
 
+  const sortedVehicles = [...vehicles].sort((a, b) => {
+    if (sortBy === 'sequenceAsc') {
+      return (a.daily_sequence || 0) - (b.daily_sequence || 0);
+    }
+    if (sortBy === 'sequenceDesc') {
+      return (b.daily_sequence || 0) - (a.daily_sequence || 0);
+    }
+    return 0; // Chronological is the default from firestore (started_at asc)
+  });
+
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#E0E0E0] p-8 font-sans overflow-y-auto relative">
       {alertText && (
@@ -89,7 +100,17 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
         </div>
         <div className="flex items-center gap-6 text-xl font-bold text-white/80">
           <span className="font-mono uppercase tracking-wider">{format(currentTime, "dd 'DE' MMMM 'DE' yyyy ' - ' eeee ' - ' HH:mm:ss", { locale: ptBR }).toUpperCase()}</span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <button 
+              onClick={() => {
+                if (sortBy === 'chronological') setSortBy('sequenceDesc');
+                else if (sortBy === 'sequenceDesc') setSortBy('sequenceAsc');
+                else setSortBy('chronological');
+              }}
+              className="text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded hover:bg-white/10 uppercase tracking-widest transition-colors flex items-center gap-1"
+            >
+              Ordernar: {sortBy === 'chronological' ? 'Chegada' : sortBy === 'sequenceDesc' ? 'Maior p/ Menor' : 'Menor p/ Maior'}
+            </button>
             {onBack && (
               <button onClick={onBack} className="text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded hover:bg-white/10 uppercase tracking-widest transition-colors">Voltar</button>
             )}
@@ -99,7 +120,7 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {vehicles.map(v => {
+        {sortedVehicles.map(v => {
             const badgeColor = 
               v.progress_status === 'TRIAGEM' ? 'text-orange-400' :
               v.progress_status === 'SEM ESPAÇO' ? 'text-red-400' :

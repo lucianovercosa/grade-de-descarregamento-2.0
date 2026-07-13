@@ -43,6 +43,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [alertText, setAlertText] = useState<string | null>(null);
   const [whatsappContacts, setWhatsappContacts] = useState<{name: string, phone: string}[]>([]);
+  const [sortBy, setSortBy] = useState<'chronological' | 'sequenceDesc' | 'sequenceAsc'>('chronological');
   
   const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
   const prevStatuses = useRef<Record<string, string>>({});
@@ -163,8 +164,18 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
     return true;
   });
 
-  const activeVehicles = filtered.filter(v => v.progress_status !== 'RECEBIDO');
-  const finishedVehicles = filtered.filter(v => v.progress_status === 'RECEBIDO');
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    if (sortBy === 'sequenceAsc') {
+      return (a.daily_sequence || 0) - (b.daily_sequence || 0);
+    }
+    if (sortBy === 'sequenceDesc') {
+      return (b.daily_sequence || 0) - (a.daily_sequence || 0);
+    }
+    return 0; // default chronological from firestore
+  });
+
+  const activeVehicles = sortedFiltered.filter(v => v.progress_status !== 'RECEBIDO');
+  const finishedVehicles = sortedFiltered.filter(v => v.progress_status === 'RECEBIDO');
 
   const handleExportExcel = () => {
     const dataToExport = filtered.map(v => {
@@ -630,6 +641,17 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
               className="bg-dark"
             />
           </div>
+
+          <button 
+            onClick={() => {
+              if (sortBy === 'chronological') setSortBy('sequenceDesc');
+              else if (sortBy === 'sequenceDesc') setSortBy('sequenceAsc');
+              else setSortBy('chronological');
+            }}
+            className="shrink-0 bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white hover:bg-white/5 transition-colors uppercase tracking-widest font-bold flex items-center gap-2"
+          >
+            {sortBy === 'chronological' ? 'Chegada' : sortBy === 'sequenceDesc' ? 'Maior p/ Menor' : 'Menor p/ Maior'}
+          </button>
 
           <select value={view} onChange={(e) => setView(e.target.value as any)} className="shrink-0 bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-white">
             <option value="cards">Cards Completos</option>
