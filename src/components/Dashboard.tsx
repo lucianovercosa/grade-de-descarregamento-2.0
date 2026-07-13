@@ -676,7 +676,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       </header>
 
       {/* Status Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 lg:gap-4">
         <div 
           onClick={() => setSelectedStatuses([])}
           className={`cursor-pointer bg-[#15151A] rounded-xl border shadow-[0_0_15px_rgba(255,255,255,0.1)] border-white/20 p-2 h-16 flex flex-col items-center justify-center gap-1 transition-all hover:bg-[#1A1A20] relative overflow-hidden ${selectedStatuses.length === 0 ? 'ring-2 ring-white/50' : 'opacity-60'}`}
