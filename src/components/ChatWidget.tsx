@@ -27,19 +27,33 @@ export function ChatWidget() {
   }, [user]);
   
   const prevMessagesLength = useRef(0);
+  const [previewMessage, setPreviewMessage] = useState<ChatMessage | null>(null);
+  const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (messages.length > prevMessagesLength.current) {
       if (!isOpen) {
-        setUnreadCount(prev => prev + (messages.length - prevMessagesLength.current));
+        const newMessagesCount = messages.length - prevMessagesLength.current;
+        setUnreadCount(prev => prev + newMessagesCount);
+        
+        // Show preview of the latest message
+        const latestMsg = messages[messages.length - 1];
+        if (latestMsg && latestMsg.user_id !== user?.uid) {
+          setPreviewMessage(latestMsg);
+          if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
+          previewTimeoutRef.current = setTimeout(() => {
+            setPreviewMessage(null);
+          }, 4000);
+        }
       }
     }
     prevMessagesLength.current = messages.length;
     
     if (isOpen) {
+      setPreviewMessage(null);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, user?.uid]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -76,6 +90,19 @@ export function ChatWidget() {
 
   return (
     <>
+      {!isOpen && previewMessage && (
+        <div 
+          onClick={handleOpen}
+          className="fixed bottom-24 right-6 bg-[#1A1A20] border border-white/20 rounded-lg p-3 shadow-2xl z-50 animate-in slide-in-from-bottom-4 fade-in cursor-pointer max-w-[250px]"
+        >
+          <div className="flex justify-between items-start gap-3 mb-1">
+            <span className="text-xs font-bold text-white/80">{previewMessage.user_name}</span>
+            <span className="text-[9px] text-white/40 mt-0.5">Agora</span>
+          </div>
+          <p className="text-sm text-white line-clamp-2">{previewMessage.text}</p>
+        </div>
+      )}
+
       {!isOpen && (
         <button 
           onClick={handleOpen}
