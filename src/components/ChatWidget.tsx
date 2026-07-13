@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { AppUser, ChatMessage } from '../types';
-import { MessageSquare, X, Send } from 'lucide-react';
+import { MessageSquare, X, Send, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 export function ChatWidget() {
@@ -120,6 +120,32 @@ export function ChatWidget() {
     }
   };
 
+  const handleClearChat = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Tem certeza que deseja limpar o chat para todos?')) return;
+    try {
+      const q = query(collection(db, 'chat_messages'));
+      const snapshot = await getDocs(q);
+      
+      // Firestore batch has a limit of 500 operations. We'll chunk it to 400 to be safe.
+      const chunks = [];
+      for (let i = 0; i < snapshot.docs.length; i += 400) {
+        chunks.push(snapshot.docs.slice(i, i + 400));
+      }
+
+      for (const chunk of chunks) {
+        const batch = writeBatch(db);
+        chunk.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      }
+    } catch (error: any) {
+      console.error('Error clearing chat:', error);
+      alert('Erro ao limpar o chat: ' + error.message);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -158,9 +184,18 @@ export function ChatWidget() {
               <MessageSquare size={18} className="text-blue-400" />
               <h3 className="font-bold text-white">Chat Geral</h3>
             </div>
-            <button onClick={handleClose} className="text-white/60 hover:text-white transition-colors">
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleClearChat}
+                className="text-red-400 hover:text-red-300 transition-colors p-1"
+                title="Limpar Chat para Todos"
+              >
+                <Trash2 size={18} />
+              </button>
+              <button onClick={handleClose} className="text-white/60 hover:text-white transition-colors p-1">
+                <X size={20} />
+              </button>
+            </div>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
