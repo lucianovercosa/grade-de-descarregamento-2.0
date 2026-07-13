@@ -147,7 +147,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       if (v.forklift_user_id !== user.uid) return false;
     }
     if (selectedDates.length > 0) {
-      const vDate = v.created_at ? format(parseISO(v.created_at), 'yyyy-MM-dd') : '';
+      const vDate = v.started_at ? format(parseISO(v.started_at), 'yyyy-MM-dd') : '';
       if (!selectedDates.includes(vDate)) return false;
     }
     if (filterText) {
