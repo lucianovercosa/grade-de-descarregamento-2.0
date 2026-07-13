@@ -81,3 +81,11 @@ export const PROGRESS_PERCENT: Record<string, number> = {
     "EM DESCARREGO": 85,
     "RECEBIDO": 100,
 };
+
+export interface ChatMessage {
+  id?: string;
+  text: string;
+  user_id: string;
+  user_name: string;
+  created_at: string;
+}

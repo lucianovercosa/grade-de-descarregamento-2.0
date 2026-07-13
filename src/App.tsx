@@ -11,6 +11,7 @@ import { ProductsManager } from './components/ProductsManager';
 import { ChangePassword } from './components/ChangePassword';
 import { ResponsiblesManager } from './components/ResponsiblesManager';
 import { RolesManager } from './components/RolesManager';
+import { ChatWidget } from './components/ChatWidget';
 
 function MainApp() {
   const { user, loading } = useAuth();
@@ -72,12 +73,15 @@ function MainApp() {
   };
 
   return (
-    <Layout activeView={activeView} onNavigate={(view) => {
-      setActiveView(view);
-      setEditingVehicleId(null);
-    }}>
-      {renderContent()}
-    </Layout>
+    <>
+      <Layout activeView={activeView} onNavigate={(view) => {
+        setActiveView(view);
+        setEditingVehicleId(null);
+      }}>
+        {renderContent()}
+      </Layout>
+      <ChatWidget />
+    </>
   );
 }
 
