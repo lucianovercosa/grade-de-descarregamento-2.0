@@ -72,7 +72,7 @@ export function ChatWidget() {
     }
   };
 
-  if (!user || user.role === 'tv') return null;
+  if (!user) return null;
 
   return (
     <>

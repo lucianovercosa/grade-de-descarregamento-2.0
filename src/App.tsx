@@ -29,7 +29,12 @@ function MainApp() {
   }
 
   if (user.role === 'tv' || activeView === 'tv') {
-    return <TVMode onBack={user.role !== 'tv' ? () => setActiveView('dashboard') : undefined} />;
+    return (
+      <>
+        <TVMode onBack={user.role !== 'tv' ? () => setActiveView('dashboard') : undefined} />
+        <ChatWidget />
+      </>
+    );
   }
 
   const renderContent = () => {
