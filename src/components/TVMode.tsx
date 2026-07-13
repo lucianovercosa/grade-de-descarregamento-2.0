@@ -40,7 +40,7 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'vehicles'), orderBy('created_at', 'asc'));
+    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
       const filtered = data.filter(v => v.progress_status !== 'RECEBIDO');

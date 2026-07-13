@@ -64,7 +64,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
       console.log('Contacts listener error:', error);
     });
 
-    const q = query(collection(db, 'vehicles'), orderBy('created_at', 'asc'));
+    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
       
@@ -273,26 +273,29 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
 
     return (
       <div key={v.id} className={`bg-[#15151A] rounded-xl border-l-4 ${progressColor} border-y border-r ${glowEffect} p-5 flex flex-col gap-2 min-w-[300px] w-80 shrink-0 transition-all hover:bg-[#1A1A20]`}>
-        <div className="flex justify-between items-start gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="text-[12px] text-[#39FF14] drop-shadow-[0_0_8px_rgba(57,255,20,0.8)] uppercase tracking-widest font-bold mb-1">{v.daily_sequence}º CARRO</div>
-            <div className="text-2xl font-mono text-blue-400 font-bold truncate">{v.plate}</div>
-            <div className="text-xs flex flex-col gap-1.5 mt-2">
-              <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Motorista:</span> <span className="font-bold text-white truncate" title={v.driver || 'Não informado'}>{v.driver || 'Não informado'}</span></div>
-              {!isSimple && (
-                <>
-                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Transportador:</span> <span className="font-bold text-white truncate" title={v.transporter || '-'}>{v.transporter || '-'}</span></div>
-                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Fornecedor:</span> <span className="font-bold text-white truncate" title={v.supplier || '-'}>{v.supplier || '-'}</span></div>
-                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Nota Fiscal:</span> <span className="font-bold text-white truncate" title={v.invoice_number || '-'}>{v.invoice_number || '-'}</span></div>
-                  <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Resp. Descarreg.:</span> <span className="font-bold text-white truncate" title={v.forklift_name || 'Nenhum'}>{v.forklift_name || 'Nenhum'}</span></div>
-                </>
-              )}
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-[12px] text-[#39FF14] drop-shadow-[0_0_8px_rgba(57,255,20,0.8)] uppercase tracking-widest font-bold mb-1">{v.daily_sequence}º CARRO</div>
+              <div className="text-2xl font-mono text-blue-400 font-bold truncate">{v.plate}</div>
+            </div>
+            <div className="mt-1 shrink-0 text-right">
+              <span className={`inline-block px-2 py-1 rounded text-xs font-bold text-center ${badgeColor}`}>
+                {v.progress_status}
+              </span>
             </div>
           </div>
-          <div className="mt-1 shrink-0 text-right">
-            <span className={`inline-block px-2 py-1 rounded text-xs font-bold text-center ${badgeColor}`}>
-              {v.progress_status}
-            </span>
+
+          <div className="text-xs flex flex-col gap-1.5 mt-1">
+            <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Motorista:</span> <span className="font-bold text-white truncate" title={v.driver || 'Não informado'}>{v.driver || 'Não informado'}</span></div>
+            {!isSimple && (
+              <>
+                <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Transportador:</span> <span className="font-bold text-white truncate" title={v.transporter || '-'}>{v.transporter || '-'}</span></div>
+                <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Fornecedor:</span> <span className="font-bold text-white truncate" title={v.supplier || '-'}>{v.supplier || '-'}</span></div>
+                <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Nota Fiscal:</span> <span className="font-bold text-white truncate" title={v.invoice_number || '-'}>{v.invoice_number || '-'}</span></div>
+                <div className="flex items-baseline gap-1 overflow-hidden"><span className="text-white/40 shrink-0 w-[110px]">Resp. Descarreg.:</span> <span className="font-bold text-white truncate" title={v.forklift_name || 'Nenhum'}>{v.forklift_name || 'Nenhum'}</span></div>
+              </>
+            )}
           </div>
         </div>
 
