@@ -12,8 +12,8 @@ interface LayoutProps {
 }
 
 export function Layout({ children, activeView, onNavigate }: LayoutProps) {
-  const { user } = useAuth();
-
+  const { user, hasPermission } = useAuth();
+  
   const handleLogout = async () => {
     await signOut(auth);
   };
@@ -36,54 +36,68 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
         </div>
 
         <nav className="flex-1 py-4 flex flex-col gap-1">
-          <button 
-            onClick={() => onNavigate('dashboard')}
-            className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'dashboard' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
-          >
-            <span className="text-sm">Dashboard</span>
-          </button>
+          {hasPermission('view_dashboard') && (
+            <button 
+              onClick={() => onNavigate('dashboard')}
+              className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'dashboard' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+            >
+              <span className="text-sm">Dashboard</span>
+            </button>
+          )}
           
-          {user?.role === 'admin' && (
-            <>
-              <button 
-                onClick={() => onNavigate('vehicles')}
-                className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'vehicles' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
-              >
-                <span className="text-sm">Cadastro</span>
-              </button>
-              <button 
-                onClick={() => onNavigate('products')}
-                className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'products' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
-              >
-                <span className="text-sm">Produtos</span>
-              </button>
-              <button 
-                onClick={() => onNavigate('users')}
-                className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'users' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
-              >
-                <span className="text-sm">Usuários</span>
-              </button>
-              <button 
-                onClick={() => onNavigate('responsibles')}
-                className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'responsibles' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
-              >
-                <span className="text-sm">Responsáveis</span>
-              </button>
-              <button 
-                onClick={() => onNavigate('roles')}
-                className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'roles' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
-              >
-                <span className="text-sm">Funções</span>
-              </button>
-            </>
+          {hasPermission('manage_vehicles') && (
+            <button 
+              onClick={() => onNavigate('vehicles')}
+              className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'vehicles' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+            >
+              <span className="text-sm">Cadastro</span>
+            </button>
+          )}
+          
+          {hasPermission('manage_products') && (
+            <button 
+              onClick={() => onNavigate('products')}
+              className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'products' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+            >
+              <span className="text-sm">Produtos</span>
+            </button>
+          )}
+          
+          {hasPermission('manage_users') && (
+            <button 
+              onClick={() => onNavigate('users')}
+              className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'users' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+            >
+              <span className="text-sm">Usuários</span>
+            </button>
+          )}
+          
+          {hasPermission('manage_responsibles') && (
+            <button 
+              onClick={() => onNavigate('responsibles')}
+              className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'responsibles' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+            >
+              <span className="text-sm">Responsáveis</span>
+            </button>
+          )}
+          
+          {hasPermission('manage_roles') && (
+            <button 
+              onClick={() => onNavigate('roles')}
+              className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'roles' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+            >
+              <span className="text-sm">Funções</span>
+            </button>
           )}
 
-          <button 
-            onClick={() => onNavigate('tv')}
-            className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'tv' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
-          >
-            <span className="text-sm">TV</span>
-          </button>
+          {hasPermission('view_tv') && (
+            <button 
+              onClick={() => onNavigate('tv')}
+              className={`text-left px-6 py-3 transition-colors flex items-center gap-3 ${activeView === 'tv' ? 'bg-blue-500/10 border-r-4 border-blue-500 text-blue-400 font-medium' : 'text-white/60 hover:text-white'}`}
+            >
+              <span className="text-sm">TV</span>
+            </button>
+          )}
         </nav>
 
         <div className="p-6 border-t border-white/10">

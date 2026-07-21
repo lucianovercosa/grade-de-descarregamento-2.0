@@ -25,46 +25,46 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin() || ('email' in request.auth.token && request.auth.token.email == 'lucianovercosa@gmail.com'));
+      allow write: if isSignedIn() && (request.auth.uid == userId || isOperational() || ('email' in request.auth.token && request.auth.token.email == 'lucianovercosa@gmail.com'));
     }
 
     match /products/{productId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isOperational();
     }
 
     match /progress_events/{eventId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update, delete: if isAdmin();
+      allow update, delete: if isOperational();
     }
 
     match /vehicles/{vehicleId} {
       allow read: if true; // Allowed for public links. In a real app, use a subcollection or backend proxy.
-      allow create: if isAdmin() || isOperational();
-      allow update: if isAdmin() || isOperational();
-      allow delete: if isAdmin() || isOperational();
+      allow create: if isOperational();
+      allow update: if isOperational();
+      allow delete: if isOperational();
     }
 
     match /responsibles/{responsibleId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isOperational();
     }
 
     match /roles/{roleId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isOperational();
     }
 
     match /settings/{settingId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isOperational();
+      allow write: if isOperational();
     }
     
     match /chat_messages/{messageId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update: if isAdmin();
+      allow update: if isOperational();
       allow delete: if isSignedIn();
     }
   }

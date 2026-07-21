@@ -34,7 +34,7 @@ function formatDuration(startStr?: string, endStr?: string) {
 }
 
 export function Dashboard({ onEditVehicle }: DashboardProps) {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [view, setView] = useState<'cards' | 'simple' | 'list'>('cards');
   const [filterText, setFilterText] = useState('');
@@ -143,7 +143,10 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
   };
 
   const baseFiltered = vehicles.filter(v => {
-    if (user?.role === 'empilhador' || user?.role === 'mro') {
+    const roleName = user?.role?.toLowerCase() || '';
+    // If they have admin permissions, they should see everything regardless of name
+    const isAdminLike = hasPermission('manage_users') && hasPermission('manage_roles');
+    if (!isAdminLike && (roleName.includes('empilhador') || roleName.includes('mro'))) {
       if (v.forklift_user_id !== user.uid) return false;
     }
     if (selectedDates.length > 0) {
@@ -174,8 +177,9 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
     return 0; // default chronological from firestore
   });
 
-  const activeVehicles = sortedFiltered.filter(v => v.progress_status !== 'RECEBIDO');
+  const activeVehicles = sortedFiltered.filter(v => v.progress_status !== 'RECEBIDO' && v.progress_status !== 'VEÍCULO RETORNOU');
   const finishedVehicles = sortedFiltered.filter(v => v.progress_status === 'RECEBIDO');
+  const returnedVehicles = sortedFiltered.filter(v => v.progress_status === 'VEÍCULO RETORNOU');
 
   const handleExportExcel = () => {
     const dataToExport = filtered.map(v => {
@@ -425,7 +429,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
           </label>
         </div>
         
-        {user?.role === 'admin' && (
+        {hasPermission('view_dashboard') && (
           <div className="mt-3 p-2 bg-white/5 border border-white/10 rounded flex gap-3 items-center">
             <div className="bg-white p-1 rounded">
               <QRCode value={publicUrl} size={32} />
@@ -587,7 +591,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar Excel
           </button>
-          {user?.role === 'admin' && (
+          {hasPermission('manage_vehicles') && (
             <button onClick={() => onEditVehicle(null)} className="shrink-0 whitespace-nowrap px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition-colors uppercase tracking-wider">
               Novo Descarrego
             </button>
@@ -739,6 +743,16 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
           )}
         </section>
         
+        <section className="pt-6 border-t border-white/10">
+          <h2 className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-4">Carros retornaram ao remetente ({returnedVehicles.length})</h2>
+          {view === 'list' ? renderTable(returnedVehicles) : (
+            <div className="flex gap-4 overflow-x-auto pb-4 items-stretch">
+              {returnedVehicles.map(v => renderCard(v, view === 'simple'))}
+              {returnedVehicles.length === 0 && <div className="text-white/40 italic text-sm">Nenhum veículo retornou ao remetente.</div>}
+            </div>
+          )}
+        </section>
+
         <section className="pt-6 border-t border-white/10">
           <h2 className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-4">Carros finalizados ({finishedVehicles.length})</h2>
           {view === 'list' ? renderTable(finishedVehicles) : (

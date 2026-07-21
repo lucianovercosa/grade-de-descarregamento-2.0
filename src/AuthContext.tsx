@@ -9,21 +9,41 @@ export type UserRole = 'admin' | 'empilhador' | 'mro' | 'tv';
 export interface UserData {
   uid: string;
   email: string;
-  role: UserRole;
+  role: string;
   name: string;
   must_change_password?: boolean;
+  permissions?: string[];
 }
 
 interface AuthContextType {
   user: UserData | null;
   loading: boolean;
+  hasPermission: (perm: string) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true, hasPermission: () => false });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchRolePermissions = async (roleName: string): Promise<string[]> => {
+    try {
+      const q = query(collection(db, 'roles'), where('name', '==', roleName));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        return snap.docs[0].data().permissions || [];
+      }
+      
+      // Fallback for default roles
+      if (roleName === 'admin') return ['manage_vehicles', 'manage_products', 'manage_users', 'manage_responsibles', 'manage_roles', 'view_dashboard', 'view_tv'];
+      if (roleName === 'mro' || roleName === 'empilhador') return ['manage_vehicles', 'view_dashboard'];
+      if (roleName === 'tv') return ['view_tv'];
+    } catch (e) {
+      console.error("Error fetching permissions", e);
+    }
+    return [];
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -34,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: 'visitante@anonimo.com',
             role: 'admin',
             name: 'Visitante (Admin)',
+            permissions: ['manage_vehicles', 'manage_products', 'manage_users', 'manage_responsibles', 'manage_roles', 'view_dashboard', 'view_tv']
           });
           setLoading(false);
           return;
@@ -43,12 +64,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
           if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const permissions = await fetchRolePermissions(userData.role);
             setUser({
               uid: fbUser.uid,
               email: fbUser.email || '',
-              role: userDoc.data().role,
-              name: userDoc.data().name,
-              must_change_password: userDoc.data().must_change_password,
+              role: userData.role,
+              name: userData.name,
+              must_change_password: userData.must_change_password,
+              permissions
             });
           } else {
             // Try to find the user by email
@@ -65,7 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                  setLoading(false);
                  return;
               }
-
               // Create the document with UID for future fast lookups
               await setDoc(doc(db, 'users', fbUser.uid), {
                 ...data,
@@ -73,12 +96,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 updated_at: new Date().toISOString()
               });
               
+              const permissions = await fetchRolePermissions(data.role);
               setUser({
                 uid: fbUser.uid,
                 email: fbUser.email || '',
                 role: data.role,
                 name: data.name || fbUser.displayName || fbUser.email || 'Usuário',
                 must_change_password: data.must_change_password,
+                permissions
               });
             } else if (fbUser.email === 'lucianovercosa@gmail.com') {
               try {
@@ -95,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   email: fbUser.email,
                   role: 'admin',
                   name: fbUser.displayName || 'Administrador',
+                  permissions: ['manage_vehicles', 'manage_products', 'manage_users', 'manage_responsibles', 'manage_roles', 'view_dashboard', 'view_tv']
                 });
               } catch (err) {
                 console.error("Failed to create admin user doc", err);
@@ -115,10 +141,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+  const hasPermission = (perm: string) => {
+    if (!user) return false;
+    if (user.role === 'admin') return true; // Hardcoded fallback for super admin
+    if (user.permissions && user.permissions.includes(perm)) return true;
+    return false;
+  };
+
+  return <AuthContext.Provider value={{ user, loading, hasPermission }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

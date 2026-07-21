@@ -44,7 +44,7 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
     const q = query(collection(db, 'vehicles'), orderBy('started_at', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
-      const filtered = data.filter(v => v.progress_status !== 'RECEBIDO');
+      const filtered = data.filter(v => v.progress_status !== 'RECEBIDO' && v.progress_status !== 'VEÍCULO RETORNOU');
       
       let hasStatusChange = false;
       let lastChangedVehicle: Vehicle | null = null;
