@@ -42,7 +42,11 @@ export function Login() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login.');
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Usuário ou senha incorretos.');
+      } else {
+        setError(err.message || 'Erro ao fazer login.');
+      }
       console.error(err);
     } finally {
       setLoading(false);
