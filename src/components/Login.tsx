@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
 import { Logo } from './Logo';
 
 export function Login() {
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
   
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ export function Login() {
   const handleGoogleLogin = async (e: React.MouseEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
@@ -35,10 +37,9 @@ export function Login() {
       setError('Preencha email e senha.');
       return;
     }
-
     setError('');
+    setSuccessMsg('');
     setLoading(true);
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
@@ -53,6 +54,25 @@ export function Login() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Preencha seu e-mail no campo acima para redefinir a senha.');
+      return;
+    }
+    setError('');
+    setSuccessMsg('');
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMsg('E-mail de redefinição de senha enviado! Verifique sua caixa de entrada.');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao enviar e-mail de redefinição.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <section className="min-h-screen flex items-center justify-center bg-[#0A0A0B] text-[#E0E0E0] p-5 font-sans">
       <div className="w-full max-w-md bg-[#15151A] rounded-xl shadow-xl p-8 border border-white/10">
@@ -60,6 +80,7 @@ export function Login() {
         
         <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
           {error && <div className="text-red-400 min-h-[20px] text-xs">{error}</div>}
+          {successMsg && <div className="text-green-400 min-h-[20px] text-xs">{successMsg}</div>}
           
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             Usuário ou Gmail
@@ -73,7 +94,16 @@ export function Login() {
           </label>
 
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Senha
+            <div className="flex justify-between items-center">
+              <span>Senha</span>
+              <button 
+                type="button" 
+                onClick={handleForgotPassword}
+                className="text-blue-400 hover:text-blue-300 transition-colors normal-case tracking-normal"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
             <input 
               type="password" 
               value={password}
