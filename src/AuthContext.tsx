@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 must_change_password: data.must_change_password,
                 permissions
               });
-            } else if (fbUser.email === 'lucianovercosa@gmail.com') {
+            } else if (fbUser.email === 'lucianovercosa@gmail.com' || fbUser.email === 'albertojunior.pe@gmail.com') {
               try {
                 await setDoc(doc(db, 'users', fbUser.uid), {
                   email: fbUser.email,
