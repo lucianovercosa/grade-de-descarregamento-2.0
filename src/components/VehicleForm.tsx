@@ -44,8 +44,8 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
         if (file.type.startsWith('image/')) {
           const imageCompression = (await import('browser-image-compression')).default;
           const options = {
-            maxSizeMB: 0.1,
-            maxWidthOrHeight: 800,
+            maxSizeMB: 2,
+            maxWidthOrHeight: 1920,
             useWebWorker: true
           };
           finalFile = await imageCompression(file, options);
