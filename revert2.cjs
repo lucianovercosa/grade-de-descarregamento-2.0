@@ -1,7 +1,6 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/AuthContext.tsx', 'utf8');
 code = code.replace(
-  "        // Assume users have a document in 'users' collection\n        try {",
   `        // BYPASS DE SEGURANÇA PARA ADMINS
         if (fbUser.email === 'lucianovercosa@gmail.com' || fbUser.email === 'albertojunior.pe@gmail.com') {
           setUser({
@@ -16,7 +15,8 @@ code = code.replace(
         }
 
         // Assume users have a document in 'users' collection
-        try {`
+        try {`,
+  "        // Assume users have a document in 'users' collection\n        try {"
 );
 fs.writeFileSync('src/AuthContext.tsx', code);
-console.log('Patched AuthContext.tsx');
+console.log('Reverted AuthContext.tsx completely');
