@@ -2,7 +2,7 @@ import React from "react";
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 
 export type UserRole = 'admin' | 'empilhador' | 'mro' | 'tv';
 
@@ -79,11 +79,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           } else {
             // Try to find the user by email
-            const q = query(collection(db, 'users'), where('email', '==', fbUser.email));
-            const querySnapshot = await getDocs(q);
+            let matchedDoc = null;
+            const qEmail = query(collection(db, 'users'), where('email', '==', fbUser.email));
+            const querySnapshotEmail = await getDocs(qEmail);
+            if (!querySnapshotEmail.empty) {
+              matchedDoc = querySnapshotEmail.docs[0];
+            } else if (fbUser.email?.endsWith('@local.com')) {
+              const username = fbUser.email.split('@')[0];
+              const qUsername = query(collection(db, 'users'), where('username', '==', username));
+              const querySnapshotUsername = await getDocs(qUsername);
+              if (!querySnapshotUsername.empty) {
+                matchedDoc = querySnapshotUsername.docs[0];
+              }
+            }
             
-            if (!querySnapshot.empty) {
-              const matchedDoc = querySnapshot.docs[0];
+            if (matchedDoc) {
               const data = matchedDoc.data();
               
               if (data.active === false) {
@@ -93,6 +103,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                  return;
               }
               // Create the document with UID for future fast lookups
+              if (matchedDoc.id !== fbUser.uid) {
+                  
+                  try {
+                    await deleteDoc(matchedDoc.ref);
+                  } catch (e) { console.error('Failed to delete old doc', e); }
+              }
               await setDoc(doc(db, 'users', fbUser.uid), {
                 ...data,
                 uid: fbUser.uid,
