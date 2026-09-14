@@ -30,7 +30,7 @@ export function Login() {
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('Usuário ou senha incorretos.');
       } else {
-        setError(err.message || 'Erro ao fazer login.');
+        setError(`Erro: ${err.code} - ${err.message}`);
       }
       console.error(err);
     } finally {
