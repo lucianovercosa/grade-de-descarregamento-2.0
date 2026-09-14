@@ -1,3 +1,4 @@
+console.log("USING FIREBASE MOCK");
 // Mock for Firebase to redirect all calls to Local Node Server
 let dbCache = {};
 let listeners = [];
@@ -58,7 +59,7 @@ export function onAuthStateChanged(auth, callback) {
 }
 
 export async function sendPasswordResetEmail() {}
-export async function createUserWithEmailAndPassword(auth, email, password) {
+export async function createUserWithEmailAndPassword(auth: any, email: any, password: any) {
    const id = Date.now().toString();
    return { user: { uid: id, email } };
 }
@@ -83,7 +84,7 @@ export function query(colRef, ...constraints) {
 export function where(field, op, value) { return { type: 'where', field, op, value }; }
 export function orderBy(field, dir) { return { type: 'orderBy', field, dir }; }
 
-function filterAndSort(docsObj, constraints = []) {
+function filterAndSort(docsObj: any, constraints: any[] = []) {
    let docs = Object.values(docsObj || {});
    for (let c of constraints) {
        if (c.type === 'where') {
@@ -119,7 +120,7 @@ export function onSnapshot(q, callback) {
        } else {
            const docs = filterAndSort(dbCache[q.path], q.constraints);
            callback({
-               docs: docs.map(d => ({ id: d.id, data: () => d }))
+               empty: docs.length === 0, docs: docs.map((d: any) => ({ id: d.id, data: () => d }))
            });
        }
     };
@@ -137,7 +138,7 @@ export async function getDocs(q) {
     }
     const docs = filterAndSort(dbCache[q.path], q.constraints);
     return {
-        docs: docs.map(d => ({ id: d.id, data: () => d }))
+        empty: docs.length === 0, docs: docs.map((d: any) => ({ id: d.id, data: () => d }))
     };
 }
 
@@ -186,9 +187,9 @@ export async function deleteDoc(docRef) {
 
 export function writeBatch() {
     return {
-        set: async (ref, data) => setDoc(ref, data),
-        update: async (ref, data) => updateDoc(ref, data),
-        delete: async (ref) => deleteDoc(ref),
+        set: async (ref: any, data: any) => setDoc(ref, data, {}),
+        update: async (ref: any, data: any) => updateDoc(ref, data),
+        delete: async (ref: any) => deleteDoc(ref),
         commit: async () => {}
     };
 }

@@ -8,7 +8,10 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: [
-        { find: /^firebase\/(.*)/, replacement: path.resolve(__dirname, 'src/lib/firebase-mock.ts') },
+        { find: 'firebase/app', replacement: path.resolve(__dirname, 'src/lib/firebase-mock.ts') },
+        { find: 'firebase/auth', replacement: path.resolve(__dirname, 'src/lib/firebase-mock.ts') },
+        { find: 'firebase/firestore', replacement: path.resolve(__dirname, 'src/lib/firebase-mock.ts') },
+        { find: 'firebase/storage', replacement: path.resolve(__dirname, 'src/lib/firebase-mock.ts') },
         { find: '@', replacement: path.resolve(__dirname, '.') }
       ]
     },

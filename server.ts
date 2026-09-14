@@ -10,6 +10,13 @@ const app = express();
 const PORT = 3000;
 app.use(cors());
 app.use(express.json());
+app.post('/api/log', (req, res) => { 
+  console.log('[CLIENT LOG]', req.body); 
+  // removed commonjs fs
+  
+  res.send('ok'); 
+});
+app.use((req, res, next) => { console.log(`[REQ] ${req.method} ${req.url}`); next(); });
 
 const DB_PATH = path.join(process.cwd(), 'data', 'db.json');
 
@@ -24,6 +31,7 @@ async function initDb() {
         "admin-master-local": {
           id: "admin-master-local",
           email: "admin@local.com",
+          username: "admin",
           role: "admin",
           name: "Administrador Master (Local)",
           permissions: ["manage_vehicles", "manage_products", "manage_users", "manage_responsibles", "manage_roles", "view_dashboard", "view_tv", "chat"]
@@ -58,6 +66,7 @@ async function writeDb(db: any) {
 }
 
 app.get('/api/db', async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   const db = await readDb();
   res.json(db);
 });

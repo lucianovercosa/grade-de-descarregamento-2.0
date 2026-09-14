@@ -34,14 +34,18 @@ export function Login() {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Preencha email e senha.');
+      setError('Preencha usuário e senha.');
       return;
     }
     setError('');
     setSuccessMsg('');
     setLoading(true);
+
+    // Convert username to email format if it doesn't have @
+    const loginEmail = email.includes('@') ? email.trim() : `${email.trim().toLowerCase()}@local.com`;
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, loginEmail, password);
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('Usuário ou senha incorretos.');
@@ -83,9 +87,9 @@ export function Login() {
           {successMsg && <div className="text-green-400 min-h-[20px] text-xs">{successMsg}</div>}
           
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Usuário ou Gmail
+            Nome de Usuário
             <input 
-              type="email" 
+              type="text" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal"

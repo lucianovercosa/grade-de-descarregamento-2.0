@@ -47,9 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      console.log("Auth State Changed:", fbUser);
       if (fbUser) {
         if (fbUser.isAnonymous) {
-          setUser({
+          console.log("Setting user state...");
+            setUser({
             uid: fbUser.uid,
             email: 'visitante@anonimo.com',
             role: 'admin',
@@ -63,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Assume users have a document in 'users' collection
         try {
           const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
+          console.log("User doc exists?", userDoc.exists(), userDoc.data && userDoc.data());
           if (userDoc.exists()) {
             const userData = userDoc.data();
             const permissions = await fetchRolePermissions(userData.role);
@@ -83,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const matchedDoc = querySnapshot.docs[0];
               const data = matchedDoc.data();
               
-              if (!data.active) {
+              if (data.active === false) {
                  setUser(null);
                  await auth.signOut();
                  setLoading(false);
@@ -127,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             } else {
               // Sign out if no user found
-              alert('Seu usuário não está cadastrado. Peça para o administrador liberar seu acesso.');
+              console.log('User not found in DB', fbUser); alert('Seu usuário não está cadastrado. Peça para o administrador liberar seu acesso.');
               await auth.signOut();
               setUser(null);
             }

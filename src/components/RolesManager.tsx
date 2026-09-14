@@ -35,10 +35,10 @@ export function RolesManager() {
   const getDisplayRoles = () => {
     const display = [...roles];
     const defaultRoles: Role[] = [
-      { id: 'admin', name: 'admin', permissions: ['manage_vehicles', 'manage_products', 'manage_users', 'manage_responsibles', 'manage_roles', 'view_dashboard', 'view_tv'], created_at: new Date().toISOString() },
-      { id: 'mro', name: 'mro', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
-      { id: 'empilhador', name: 'empilhador', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
-      { id: 'tv', name: 'tv', permissions: ['view_tv'], created_at: new Date().toISOString() },
+      { id: 'default-admin', name: 'admin', permissions: ['manage_vehicles', 'manage_products', 'manage_users', 'manage_responsibles', 'manage_roles', 'view_dashboard', 'view_tv'], created_at: new Date().toISOString() },
+      { id: 'default-mro', name: 'mro', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
+      { id: 'default-empilhador', name: 'empilhador', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
+      { id: 'default-tv', name: 'tv', permissions: ['view_tv'], created_at: new Date().toISOString() },
     ];
     
     defaultRoles.forEach(dr => {

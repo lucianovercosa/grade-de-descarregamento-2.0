@@ -57,10 +57,10 @@ export function UsersList() {
   const getDisplayRoles = () => {
     const display = [...customRoles];
     const defaultRoles: Role[] = [
-      { id: 'admin', name: 'admin', permissions: [], created_at: new Date().toISOString() },
-      { id: 'mro', name: 'mro', permissions: [], created_at: new Date().toISOString() },
-      { id: 'empilhador', name: 'empilhador', permissions: [], created_at: new Date().toISOString() },
-      { id: 'tv', name: 'tv', permissions: [], created_at: new Date().toISOString() },
+      { id: 'default-admin', name: 'admin', permissions: [], created_at: new Date().toISOString() },
+      { id: 'default-mro', name: 'mro', permissions: [], created_at: new Date().toISOString() },
+      { id: 'default-empilhador', name: 'empilhador', permissions: [], created_at: new Date().toISOString() },
+      { id: 'default-tv', name: 'tv', permissions: [], created_at: new Date().toISOString() },
     ];
     
     defaultRoles.forEach(dr => {
@@ -76,12 +76,15 @@ export function UsersList() {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
-    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+    const rawEmail = (form.elements.namedItem('email') as HTMLInputElement).value;
     const name = (form.elements.namedItem('name') as HTMLInputElement).value;
     const role = (form.elements.namedItem('role') as HTMLSelectElement).value as AppUser['role'];
     const active = (form.elements.namedItem('active') as HTMLInputElement).checked;
     const passwordInput = form.elements.namedItem('password') as HTMLInputElement;
     const password = passwordInput ? passwordInput.value : '';
+
+    const email = rawEmail.includes('@') ? rawEmail.trim() : `${rawEmail.trim().toLowerCase()}@local.com`;
+    const username = rawEmail.includes('@') ? rawEmail.split('@')[0] : rawEmail.trim().toLowerCase();
 
     setLoading(true);
     try {
@@ -100,7 +103,7 @@ export function UsersList() {
         const newDocRef = doc(db, 'users', uid);
         await setDoc(newDocRef, {
           email,
-          username: email.split('@')[0],
+          username,
           name,
           role,
           active,
@@ -148,8 +151,8 @@ export function UsersList() {
         <h2 className="text-sm font-bold text-white/80 mb-6 uppercase tracking-widest">{isAdding ? 'Novo Usuário' : 'Editar Usuário'}</h2>
         <form onSubmit={handleSave} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Usuário ou Gmail
-            <input name="email" type="email" required defaultValue={user.email} disabled={!isAdding} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal disabled:opacity-50 disabled:bg-black/20" />
+            Nome de Usuário
+            <input name="email" type="text" required defaultValue={(user as any).username || user.email} disabled={!isAdding} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal disabled:opacity-50 disabled:bg-black/20" />
           </label>
           {isAdding && (
             <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
@@ -229,7 +232,7 @@ export function UsersList() {
         {users.map(u => (
           <div key={u.id} className="p-4 border border-white/10 rounded-lg flex flex-col md:flex-row justify-between md:items-center bg-white/5 hover:bg-white/10 transition-colors gap-4">
             <div>
-              <div className="font-bold text-lg text-white">{u.name} <span className="text-sm font-normal text-white/40">({u.email || u.username})</span></div>
+              <div className="font-bold text-lg text-white">{u.name} <span className="text-sm font-normal text-white/40">({(u as any).username || u.email?.split('@')[0]})</span></div>
               <div className="text-[10px] uppercase tracking-widest text-white/60 mt-1">
                 Função: <span className="font-bold">{u.role}</span> <span className="normal-case tracking-normal ml-2 text-white/40">- {ROLE_DESCRIPTIONS[u.role] || ''}</span>
               </div>
