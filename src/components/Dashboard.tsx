@@ -210,6 +210,19 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
     XLSX.writeFile(workbook, `relatorio_veiculos_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
+  const handleExportJSON = () => {
+    const jsonStr = JSON.stringify(vehicles, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_almoxarifado_${format(new Date(), 'yyyyMMdd_HHmmss')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const openAttachment = (e: React.MouseEvent, att: {name?: string, url: string, type?: string}) => {
     e.preventDefault();
     if (att.url.startsWith('data:image/') || att.url.includes('firebasestorage')) {
@@ -580,6 +593,10 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
           <p className="text-[10px] text-white/40 uppercase tracking-widest">Acompanhe os veículos por etapa e tempo de operação.</p>
         </div>
         <div className="flex gap-2 items-center flex-wrap lg:flex-nowrap w-full xl:w-auto justify-start xl:justify-end">
+          <button onClick={handleExportJSON} className="shrink-0 whitespace-nowrap px-3 py-1.5 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 text-xs font-bold rounded hover:bg-yellow-600/30 transition-colors uppercase tracking-wider flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Backup JSON
+          </button>
           <button onClick={handleExportExcel} className="shrink-0 whitespace-nowrap px-3 py-1.5 bg-green-600/20 text-green-400 border border-green-500/30 text-xs font-bold rounded hover:bg-green-600/30 transition-colors uppercase tracking-wider flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar Excel
