@@ -1,9 +1,6 @@
+import { api, API_URL } from '../lib/api';
 import React, { useEffect, useState, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
 import { Vehicle } from '../types';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
 import { Truck, BellRing } from 'lucide-react';
 import { differenceInMinutes, parseISO, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,36 +38,18 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
-      const filtered = data.filter(v => v.progress_status !== 'RECEBIDO' && v.progress_status !== 'VEÍCULO RETORNOU');
-      
-      let hasStatusChange = false;
-      let lastChangedVehicle: Vehicle | null = null;
-      filtered.forEach(v => {
-        if (v.id && v.progress_status) {
-          const prevStatus = prevStatuses.current[v.id];
-          if (prevStatus && prevStatus !== v.progress_status) {
-            hasStatusChange = true;
-            lastChangedVehicle = v;
-          }
-          prevStatuses.current[v.id] = v.progress_status;
-        }
-      });
-
-      if (hasStatusChange && lastChangedVehicle) {
-        const txt = `Atenção: Carro ${(lastChangedVehicle as Vehicle).daily_sequence}, placa ${(lastChangedVehicle as Vehicle).plate}, mudou para o status ${(lastChangedVehicle as Vehicle).progress_status}.`;
-        speakNotification(txt);
-        setAlertText(txt);
-        setTimeout(() => setAlertText(null), 8000);
-      }
-
-      setVehicles(filtered);
-    }, (error) => {
-      console.log('TVMode listener error:', error);
-    });
-    return unsubscribe;
+    
+    
+      const fetchVehicles = async () => {
+        try {
+          const data = await api.get('/vehicles');
+          setVehicles(data);
+        } catch (e) {}
+      };
+      fetchVehicles();
+      const int = setInterval(fetchVehicles, 5000);
+      return () => clearInterval(int);
+    
   }, []);
 
   const sortedVehicles = [...vehicles].sort((a, b) => {
@@ -114,7 +93,7 @@ export function TVMode({ onBack }: { onBack?: () => void }) {
             {onBack && (
               <button onClick={onBack} className="text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded hover:bg-white/10 uppercase tracking-widest transition-colors">Voltar</button>
             )}
-            <button onClick={() => signOut(auth)} className="text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded hover:bg-white/10 uppercase tracking-widest transition-colors">Sair</button>
+            <button onClick={() => window.location.href = '/'} className="text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded hover:bg-white/10 uppercase tracking-widest transition-colors">Sair</button>
           </div>
         </div>
       </div>

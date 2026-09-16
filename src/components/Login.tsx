@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '../firebase';
+import { useAuth } from '../AuthContext';
 import { Logo } from './Logo';
 
 export function Login() {
@@ -10,6 +9,7 @@ export function Login() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { login } = useAuth();
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,36 +21,10 @@ export function Login() {
     setSuccessMsg('');
     setLoading(true);
 
-    // Convert username to email format if it doesn't have @
-    const loginEmail = email.includes('@') ? email.trim() : `${email.trim().toLowerCase()}@local.com`;
-
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, password);
+      await login(email, password);
     } catch (err: any) {
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Usuário ou senha incorretos.');
-      } else {
-        setError(`Erro: ${err.code} - ${err.message}`);
-      }
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    if (!email) {
-      setError('Preencha seu e-mail no campo acima para redefinir a senha.');
-      return;
-    }
-    setError('');
-    setSuccessMsg('');
-    setLoading(true);
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccessMsg('E-mail de redefinição de senha enviado! Verifique sua caixa de entrada.');
-    } catch (err: any) {
-      setError(err.message || 'Erro ao enviar e-mail de redefinição.');
+      setError('Usuário ou senha incorretos.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -76,17 +50,9 @@ export function Login() {
               required 
             />
           </label>
-
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             <div className="flex justify-between items-center">
               <span>Senha</span>
-              <button 
-                type="button" 
-                onClick={handleForgotPassword}
-                className="text-blue-400 hover:text-blue-300 transition-colors normal-case tracking-normal"
-              >
-                Esqueci minha senha
-              </button>
             </div>
             <input 
               type="password" 
@@ -96,13 +62,11 @@ export function Login() {
               required 
             />
           </label>
-
           <button type="submit" disabled={loading} className="mt-2 bg-blue-600 text-white text-xs font-bold py-3 px-4 rounded hover:bg-blue-700 uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {loading ? 'Aguarde...' : 'Entrar'}
           </button>
         </form>
-
-              </div>
+      </div>
     </section>
   );
 }

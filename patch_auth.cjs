@@ -1,27 +1,28 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/AuthContext.tsx', 'utf8');
+let code = fs.readFileSync('src/server/routes.ts', 'utf8');
 
-const oldCode = `const q = query(collection(db, 'users'), where('email', '==', fbUser.email));
-            const querySnapshot = await getDocs(q);
-            
-            if (!querySnapshot.empty) {
-              const matchedDoc = querySnapshot.docs[0];`;
+const oldAuth = /const authMiddleware = \(req: any, res: any, next: any\) => \{[\s\S]*?res\.status\(401\)\.json\(\{ error: 'Invalid token' \}\);\n  \}\n\};/s;
 
-const newCode = `let matchedDoc = null;
-            const qEmail = query(collection(db, 'users'), where('email', '==', fbUser.email));
-            const querySnapshotEmail = await getDocs(qEmail);
-            if (!querySnapshotEmail.empty) {
-              matchedDoc = querySnapshotEmail.docs[0];
-            } else if (fbUser.email?.endsWith('@local.com')) {
-              const username = fbUser.email.split('@')[0];
-              const qUsername = query(collection(db, 'users'), where('username', '==', username));
-              const querySnapshotUsername = await getDocs(qUsername);
-              if (!querySnapshotUsername.empty) {
-                matchedDoc = querySnapshotUsername.docs[0];
-              }
-            }
-            
-            if (matchedDoc) {`;
+const newAuth = `const authMiddleware = (req: any, res: any, next: any) => {
+  let token = req.cookies && req.cookies.token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  
+  if (!token) {
+    console.log("No token found. Headers:", req.headers);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    console.log("Invalid token:", token, err.message);
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};`;
 
-code = code.replace(oldCode, newCode);
-fs.writeFileSync('src/AuthContext.tsx', code);
+code = code.replace(oldAuth, newAuth);
+fs.writeFileSync('src/server/routes.ts', code);

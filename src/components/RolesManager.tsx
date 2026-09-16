@@ -1,44 +1,52 @@
-import React, { useEffect, useState } from 'react';
-import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { Role } from '../types';
+import React, { useState, useEffect } from 'react';
+import { api } from '../lib/api';
+
+interface Role {
+  id?: string;
+  name: string;
+  permissions: string[];
+  created_at?: string;
+}
 
 const AVAILABLE_PERMISSIONS = [
-  { id: 'manage_vehicles', label: 'Gerenciar Cadastro' },
-  { id: 'manage_products', label: 'Gerenciar Produtos' },
-  { id: 'manage_users', label: 'Gerenciar Usuários' },
-  { id: 'manage_responsibles', label: 'Gerenciar Responsáveis' },
-  { id: 'manage_roles', label: 'Gerenciar Funções' },
-  { id: 'view_dashboard', label: 'Visualizar Dashboard' },
-  { id: 'view_tv', label: 'Visualizar TV' },
+  { id: 'manage_vehicles', label: 'Gerenciar Veículos (Adicionar/Editar)' },
+  { id: 'manage_products', label: 'Gerenciar Produtos/Cargas' },
+  { id: 'manage_users', label: 'Gerenciar Usuários (Acesso Total)' },
+  { id: 'manage_responsibles', label: 'Gerenciar Responsáveis (Lista)' },
+  { id: 'manage_roles', label: 'Gerenciar Funções e Permissões' },
+  { id: 'view_dashboard', label: 'Acessar Dashboard Completo' },
+  { id: 'view_tv', label: 'Acessar Modo TV' }
 ];
 
 export function RolesManager() {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
   const [deletingRoleId, setDeletingRoleId] = useState<string | null>(null);
+  
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
   useEffect(() => {
-    const q = query(collection(db, 'roles'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Role));
-      setRoles(data);
-    }, (error) => {
-      console.log('Roles listener error:', error);
-    });
-    return unsubscribe;
+    fetchRoles();
   }, []);
+
+  const fetchRoles = async () => {
+    try {
+      const data = await api.get('/roles');
+      setRoles(data.map((r: any) => ({ ...r, permissions: r.permissions ? JSON.parse(r.permissions) : [] })));
+    } catch(e) {
+      console.error(e);
+    }
+  };
 
   const getDisplayRoles = () => {
     const display = [...roles];
     const defaultRoles: Role[] = [
-      { id: 'default-admin', name: 'admin', permissions: ['manage_vehicles', 'manage_products', 'manage_users', 'manage_responsibles', 'manage_roles', 'view_dashboard', 'view_tv'], created_at: new Date().toISOString() },
-      { id: 'default-mro', name: 'mro', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
-      { id: 'default-empilhador', name: 'empilhador', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
-      { id: 'default-tv', name: 'tv', permissions: ['view_tv'], created_at: new Date().toISOString() },
+      { id: 'admin', name: 'admin', permissions: ['manage_vehicles', 'manage_products', 'manage_users', 'manage_responsibles', 'manage_roles', 'view_dashboard', 'view_tv'], created_at: new Date().toISOString() },
+      { id: 'mro', name: 'mro', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
+      { id: 'empilhador', name: 'empilhador', permissions: ['manage_vehicles', 'view_dashboard'], created_at: new Date().toISOString() },
+      { id: 'tv', name: 'tv', permissions: ['view_tv'], created_at: new Date().toISOString() },
     ];
     
     defaultRoles.forEach(dr => {
@@ -55,33 +63,24 @@ export function RolesManager() {
     e.preventDefault();
     const form = e.currentTarget;
     const name = (form.elements.namedItem('name') as HTMLInputElement).value;
-
     setLoading(true);
     try {
       if (isAdding) {
-        const newDocRef = doc(collection(db, 'roles'));
-        await setDoc(newDocRef, {
+        await api.post('/roles', {
+          id: name.toLowerCase().replace(/\s+/g, '-'),
           name,
-          permissions: selectedPermissions,
-          created_at: new Date().toISOString()
+          permissions: selectedPermissions
         });
       } else if (editingRole?.id) {
-        if (['admin', 'mro', 'empilhador', 'tv'].includes(editingRole.id)) {
-          await setDoc(doc(db, 'roles', editingRole.id), {
-            name,
-            permissions: selectedPermissions,
-            created_at: new Date().toISOString()
-          });
-        } else {
-          await updateDoc(doc(db, 'roles', editingRole.id), {
-            name,
-            permissions: selectedPermissions,
-          });
-        }
+        await api.put(`/roles/${editingRole.id}`, {
+          name,
+          permissions: selectedPermissions
+        });
       }
       setIsAdding(false);
       setEditingRole(null);
       setSelectedPermissions([]);
+      fetchRoles();
     } catch (err: any) {
       console.error(err);
       alert('Erro ao salvar função: ' + err.message);
@@ -97,8 +96,9 @@ export function RolesManager() {
          setDeletingRoleId(null);
          return;
       }
-      await deleteDoc(doc(db, 'roles', id));
+      await api.delete(`/roles/${id}`);
       setDeletingRoleId(null);
+      fetchRoles();
     } catch (err) {
       console.error(err);
       alert('Erro ao remover função.');
@@ -172,7 +172,7 @@ export function RolesManager() {
             <div className="flex flex-col gap-1">
               <span className="font-bold text-white uppercase tracking-widest text-xs">{role.name}</span>
               <span className="text-[10px] text-white/40 uppercase tracking-widest">
-                {role.permissions.length} permissões configuradas
+                {role.permissions?.length || 0} permissões configuradas
               </span>
             </div>
             
@@ -200,11 +200,6 @@ export function RolesManager() {
             </div>
           </div>
         ))}
-        {displayRoles.length === 0 && (
-          <div className="text-center py-12 text-white/40 text-sm">
-            Nenhuma função cadastrada
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,10 +1,7 @@
+import { api } from '../lib/api';
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc, setDoc, addDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { db, storage } from '../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Vehicle, PROGRESS_OPTIONS, PROGRESS_PERCENT, AppUser, VehicleItem } from '../types';
+import { Vehicle, PROGRESS_OPTIONS, PROGRESS_PERCENT, VehicleItem } from '../types';
 import { startOfDay, endOfDay, format } from 'date-fns';
-import { onSnapshot } from 'firebase/firestore';
 
 interface VehicleFormProps {
   vehicleId?: string | null;
@@ -29,6 +26,47 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
   const [formData, setFormData] = useState<Partial<Vehicle>>(emptyVehicle);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [empilhadores, setEmpilhadores] = useState<any[]>([]);
+  const [productsList, setProductsList] = useState<{code: string, description: string}[]>([]);
+  const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await api.get('/users');
+        const responsibles = await api.get('/responsibles');
+        setEmpilhadores([...users.filter((u: any) => u.role === 'empilhador'), ...responsibles]);
+      } catch (err) {}
+    };
+    
+    const loadProducts = async () => {
+      try {
+        const pList = await api.get('/products');
+        setProductsList(pList);
+      } catch (err) {}
+    };
+
+    loadUsers();
+    loadProducts();
+
+    if (vehicleId) {
+      const loadVehicle = async () => {
+        try {
+          const data = await api.get('/vehicles');
+          const vehicle = data.find((v: any) => v.id === vehicleId);
+          if (vehicle) {
+            if (typeof vehicle.items === 'string') vehicle.items = JSON.parse(vehicle.items);
+            if (typeof vehicle.images === 'string') vehicle.images = JSON.parse(vehicle.images);
+            if (typeof vehicle.attachments === 'string') vehicle.attachments = JSON.parse(vehicle.attachments);
+            setFormData(vehicle);
+          }
+        } catch (err) {}
+      };
+      loadVehicle();
+    } else {
+      setFormData(emptyVehicle);
+    }
+  }, [vehicleId]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -43,12 +81,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
         let finalFile = file;
         if (file.type.startsWith('image/')) {
           const imageCompression = (await import('browser-image-compression')).default;
-          const options = {
-            maxSizeMB: 2,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true
-          };
-          finalFile = await imageCompression(file, options);
+          finalFile = await imageCompression(file, { maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true });
         }
         
         const reader = new FileReader();
@@ -80,18 +113,12 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
           const byteString = atob(att.url.split(',')[1]);
           const ab = new ArrayBuffer(byteString.length);
           const ia = new Uint8Array(ab);
-          for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-          }
+          for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
           const blob = new Blob([ab], { type: att.type || 'application/octet-stream' });
           const url = URL.createObjectURL(blob);
           window.open(url, '_blank');
-        } catch (err) {
-          window.open(att.url, '_blank');
-        }
-      } else {
-        window.open(att.url, '_blank');
-      }
+        } catch (err) { window.open(att.url, '_blank'); }
+      } else { window.open(att.url, '_blank'); }
     }
   };
 
@@ -100,91 +127,20 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
     newAttachments.splice(index, 1);
     setFormData({ ...formData, attachments: newAttachments });
   };
-  const [empilhadores, setEmpilhadores] = useState<any[]>([]);
-  const [productsList, setProductsList] = useState<{code: string, description: string}[]>([]);
-  const [whatsappContacts, setWhatsappContacts] = useState<{name: string, phone: string}[]>([]);
-  
-  const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
-
-  useEffect(() => {
-    const unsubContacts = onSnapshot(doc(db, 'settings', 'whatsapp'), (docSnap) => {
-      if (docSnap.exists()) {
-        setWhatsappContacts(docSnap.data().contacts || []);
-      }
-    }, (error) => {
-      console.log('Contacts listener error:', error);
-    });
-
-    // Load empilhadores and responsibles
-    const loadUsers = async () => {
-      try {
-        const q = query(collection(db, 'users'), where('role', '==', 'empilhador'));
-        const snap = await getDocs(q);
-        const usersList: any[] = [];
-        snap.forEach(d => usersList.push({ id: d.id, ...d.data() }));
-
-        const rSnap = await getDocs(collection(db, 'responsibles'));
-        rSnap.forEach(d => usersList.push({ id: d.id, ...d.data() }));
-
-        setEmpilhadores(usersList);
-      } catch (err) {
-        console.error("Failed to load empilhadores", err);
-      }
-    };
-    
-    // Load products
-    const loadProducts = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'products'));
-        const pList: {code: string, description: string}[] = [];
-        snap.forEach(d => {
-          const data = d.data();
-          pList.push({ code: data.code, description: data.description });
-        });
-        // Sort by description
-        pList.sort((a, b) => a.description.localeCompare(b.description));
-        setProductsList(pList);
-      } catch (err) {
-        console.error("Failed to load products", err);
-      }
-    };
-
-    loadUsers();
-    loadProducts();
-    return unsubContacts;
-  }, []);
-
-  useEffect(() => {
-    if (vehicleId) {
-      getDoc(doc(db, 'vehicles', vehicleId)).then(snap => {
-        if (snap.exists()) {
-          const data = snap.data() as Vehicle;
-          setFormData({
-            ...data,
-            items: data.items && data.items.length > 0 ? data.items : [{ ...emptyItem }]
-          });
-        }
-      });
-    } else {
-      setFormData(emptyVehicle);
-    }
-  }, [vehicleId]);
 
   const handleAddItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      items: [{ ...emptyItem }, ...(prev.items || [])]
-    }));
+    setFormData(prev => ({ ...prev, items: [...(prev.items || []), { ...emptyItem }] }));
   };
 
   const handleRemoveItem = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      items: (prev.items || []).filter((_, i) => i !== index)
-    }));
+    setFormData(prev => {
+      const newItems = [...(prev.items || [])];
+      newItems.splice(index, 1);
+      return { ...prev, items: newItems };
+    });
   };
 
-  const handleItemChange = (index: number, field: keyof VehicleItem, value: any) => {
+  const handleItemChange = (index: number, field: string, value: any) => {
     setFormData(prev => {
       const newItems = [...(prev.items || [])];
       newItems[index] = { ...newItems[index], [field]: value };
@@ -194,55 +150,53 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
 
   const handleCodeBlur = async (index: number, code: string) => {
     if (!code) return;
-    try {
-      const pDoc = await getDoc(doc(db, 'products', code));
-      if (pDoc.exists()) {
-        const pData = pDoc.data();
-        if (pData.description) {
-          handleItemChange(index, 'description', pData.description);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    const product = productsList.find(p => p.code === code);
+    setFormData(prev => {
+      const newItems = [...(prev.items || [])];
+      newItems[index] = { 
+        ...newItems[index], 
+        code, 
+        description: product ? product.description : '' 
+      };
+      return { ...prev, items: newItems };
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.plate) return;
+    
     setLoading(true);
     try {
+      const dataToSave = { ...formData };
       const now = new Date().toISOString();
-      const selectedEmp = empilhadores.find(u => u.id === formData.forklift_user_id);
       
-      const dataToSave = {
-        ...formData,
-        forklift_name: selectedEmp ? (selectedEmp.name || selectedEmp.username) : '',
-        progress_percent: PROGRESS_PERCENT[formData.progress_status || 'TRIAGEM'],
-        updated_at: now
-      };
-
+      if (dataToSave.forklift_user_id) {
+        const emp = empilhadores.find(e => e.id === dataToSave.forklift_user_id);
+        if (emp) dataToSave.forklift_name = emp.name || emp.username;
+      } else {
+        dataToSave.forklift_name = '';
+      }
+      
       if (vehicleId) {
-        await setDoc(doc(db, 'vehicles', vehicleId), dataToSave, { merge: true });
+        await api.put(`/vehicles/${vehicleId}`, dataToSave);
       } else {
         dataToSave.created_at = now;
+        dataToSave.started_at = now;
         
         const startIso = startOfDay(new Date()).toISOString();
         const endIso = endOfDay(new Date()).toISOString();
-        const q = query(collection(db, 'vehicles'), where('created_at', '>=', startIso), where('created_at', '<=', endIso));
-        const qs = await getDocs(q);
+        const resVehicles = await api.get('/vehicles');
         let maxSeq = 0;
-        qs.forEach(doc => {
-          const s = doc.data().daily_sequence || 0;
-          if (s > maxSeq) maxSeq = s;
+        resVehicles.forEach((v: any) => {
+          if (v.created_at >= startIso && v.created_at <= endIso) {
+            const s = v.daily_sequence || 0;
+            if (s > maxSeq) maxSeq = s;
+          }
         });
         dataToSave.daily_sequence = maxSeq + 1;
-
-        dataToSave.public_token = Math.random().toString(36).substring(2, 15);
-        if (!dataToSave.started_at) {
-          dataToSave.started_at = now;
-        }
-        await addDoc(collection(db, 'vehicles'), dataToSave);
         
+        await api.post('/vehicles', dataToSave);
       }
       
       if (vehicleId) {
@@ -258,44 +212,39 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
     }
   };
 
-  
-
   return (
-    <div className="bg-[#15151A] rounded-xl border border-white/10 p-6 max-w-4xl shadow-sm text-white font-sans">
-      <h2 className="text-sm font-bold text-white/80 mb-6 uppercase tracking-widest">{vehicleId ? 'Editar Veículo' : 'Novo Veículo'}</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        
-        {/* Top Grid */}
+    <div className="bg-[#15151A] rounded-xl border border-white/10 p-6 shadow-sm text-white font-sans max-w-4xl mx-auto">
+      {previewAtt && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
+          <div className="flex justify-end w-full max-w-4xl mb-4">
+            <button onClick={() => setPreviewAtt(null)} className="text-white bg-white/10 hover:bg-white/20 p-2 rounded-full">
+              Fechar
+            </button>
+          </div>
+          <img src={previewAtt.url} alt={previewAtt.name} className="max-w-full max-h-[80vh] object-contain rounded" />
+        </div>
+      )}
+      
+      <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+        <h2 className="text-sm font-bold text-white/80 uppercase tracking-widest">{vehicleId ? 'Editar Veículo' : 'Novo Veículo'}</h2>
+      </div>
+
+      <form onSubmit={handleSave} className="flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             Placa
-            <input maxLength={10} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-mono" required value={formData.plate || ''} onChange={e => setFormData({...formData, plate: e.target.value.toUpperCase()})} />
+            <input required className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm uppercase focus:outline-none focus:border-blue-500 text-white font-normal font-mono" value={formData.plate || ''} onChange={e => setFormData({...formData, plate: e.target.value.toUpperCase()})} />
           </label>
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
             Motorista
             <input className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.driver || ''} onChange={e => setFormData({...formData, driver: e.target.value})} />
           </label>
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Celular
-            <input 
-              maxLength={15}
-              className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" 
-              value={formData.driver_phone || ''} 
-              onChange={e => {
-                let v = e.target.value.replace(/\D/g, '');
-                if (v.length > 11) v = v.substring(0, 11);
-                let formatted = v;
-                if (v.length > 2 && v.length <= 7) {
-                  formatted = `(${v.substring(0,2)}) ${v.substring(2)}`;
-                } else if (v.length > 7) {
-                  formatted = `(${v.substring(0,2)}) ${v.substring(2,7)}-${v.substring(7)}`;
-                }
-                setFormData({...formData, driver_phone: formatted});
-              }} 
-            />
+            Telefone Motorista
+            <input type="tel" className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.driver_phone || ''} onChange={e => setFormData({...formData, driver_phone: e.target.value})} />
           </label>
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Transportador
+            Transportadora
             <input className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.transporter || ''} onChange={e => setFormData({...formData, transporter: e.target.value})} />
           </label>
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
@@ -303,92 +252,19 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
             <input className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.supplier || ''} onChange={e => setFormData({...formData, supplier: e.target.value})} />
           </label>
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-            Nota fiscal
+            Número da Nota Fiscal
             <input className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={formData.invoice_number || ''} onChange={e => setFormData({...formData, invoice_number: e.target.value})} />
           </label>
-          
-          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Hora inicial de entrada</span>
-              <div className="flex gap-2">
-                <input 
-                  type="date" 
-                  className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal [color-scheme:dark] flex-1" 
-                  value={formData.started_at ? format(new Date(formData.started_at), 'yyyy-MM-dd') : ''} 
-                  onChange={e => {
-                    const dateVal = e.target.value;
-                    if (!dateVal) {
-                      setFormData({...formData, started_at: ''});
-                      return;
-                    }
-                    const current = formData.started_at ? new Date(formData.started_at) : new Date();
-                    const [y, m, d] = dateVal.split('-').map(Number);
-                    current.setFullYear(y, m - 1, d);
-                    setFormData({...formData, started_at: current.toISOString()});
-                  }} 
-                />
-                <input 
-                  type="time" 
-                  className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal [color-scheme:dark] w-32" 
-                  value={formData.started_at ? format(new Date(formData.started_at), 'HH:mm') : ''} 
-                  onChange={e => {
-                    const timeVal = e.target.value;
-                    if (!timeVal) return;
-                    const current = formData.started_at ? new Date(formData.started_at) : new Date();
-                    const [h, min] = timeVal.split(':').map(Number);
-                    current.setHours(h, min, 0, 0);
-                    setFormData({...formData, started_at: current.toISOString()});
-                  }} 
-                />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold truncate">Hora da saída (Automático)</span>
-              <div className="flex gap-2">
-                <input 
-                  type="date" 
-                  className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal [color-scheme:dark] flex-1" 
-                  value={formData.finished_at ? format(new Date(formData.finished_at), 'yyyy-MM-dd') : ''} 
-                  onChange={e => {
-                    const dateVal = e.target.value;
-                    if (!dateVal) {
-                      setFormData({...formData, finished_at: ''});
-                      return;
-                    }
-                    const current = formData.finished_at ? new Date(formData.finished_at) : new Date();
-                    const [y, m, d] = dateVal.split('-').map(Number);
-                    current.setFullYear(y, m - 1, d);
-                    setFormData({...formData, finished_at: current.toISOString()});
-                  }} 
-                />
-                <input 
-                  type="time" 
-                  className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal [color-scheme:dark] w-32" 
-                  value={formData.finished_at ? format(new Date(formData.finished_at), 'HH:mm') : ''} 
-                  onChange={e => {
-                    const timeVal = e.target.value;
-                    if (!timeVal) return;
-                    const current = formData.finished_at ? new Date(formData.finished_at) : new Date();
-                    const [h, min] = timeVal.split(':').map(Number);
-                    current.setHours(h, min, 0, 0);
-                    setFormData({...formData, finished_at: current.toISOString()});
-                  }} 
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
         <hr className="border-white/10" />
 
-        {/* Items Section */}
-        <div>
-          <h3 className="text-sm font-bold text-white/80 mb-4 uppercase tracking-widest">Itens do carro</h3>
-          <button type="button" onClick={handleAddItem} className="bg-white/5 border border-white/10 text-white text-[10px] font-bold py-2 px-4 rounded hover:bg-white/10 transition-colors mb-4 inline-block uppercase tracking-widest">
-            Adicionar item
-          </button>
-          
-          <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Itens da Carga</h3>
+            <button type="button" onClick={handleAddItem} className="bg-white/5 border border-white/10 text-white text-[10px] font-bold py-1.5 px-3 rounded hover:bg-white/10 transition-colors uppercase tracking-widest">+ Adicionar Item</button>
+          </div>
+          <div className="flex flex-col gap-3">
             {formData.items?.map((item, index) => (
               <div key={index} className="flex flex-col gap-4 p-4 border border-white/10 rounded relative bg-black/20">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -402,17 +278,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
                       value={item.code} 
                       onChange={e => {
                         const code = e.target.value.replace(/\D/g, '');
-                        const product = productsList.find(p => p.code === code);
-                        
-                        setFormData(prev => {
-                          const newItems = [...(prev.items || [])];
-                          newItems[index] = { 
-                            ...newItems[index], 
-                            code, 
-                            description: product ? product.description : ''
-                          };
-                          return { ...prev, items: newItems };
-                        });
+                        handleItemChange(index, 'code', code);
                       }}
                       onBlur={() => handleCodeBlur(index, item.code)}
                     />
@@ -422,7 +288,6 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
                     <input className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} />
                   </label>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                   <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold md:col-span-5">
                     Local recebimento
@@ -445,7 +310,6 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
 
         <hr className="border-white/10" />
 
-        {/* Bottom fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold md:col-span-2">
             Responsável / Empilhador
@@ -465,21 +329,16 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
                 Anexar fotos ou arquivos
-                <div className="flex items-center gap-2">
-                  <input type="file" multiple onChange={handleFileUpload} disabled={uploading} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60 disabled:opacity-50" />
-                </div>
+                <input type="file" multiple onChange={handleFileUpload} disabled={uploading} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60 disabled:opacity-50" />
               </label>
-
               <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-white/40 font-bold">
                 Tirar foto pelo celular
-                <div className="flex items-center gap-2">
-                  <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} disabled={uploading} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60 disabled:opacity-50" />
-                </div>
+                <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} disabled={uploading} className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none w-full file:mr-4 file:py-1 file:px-2 file:rounded file:border file:border-white/10 file:text-[10px] file:uppercase file:tracking-widest file:font-bold file:bg-white/5 file:text-white hover:file:bg-white/10 text-white/60 disabled:opacity-50" />
               </label>
             </div>
             
             {uploading && <div className="text-blue-400 text-xs font-bold animate-pulse">Enviando arquivo(s)...</div>}
-
+            
             {formData.attachments && formData.attachments.length > 0 && (
               <div className="mt-2 space-y-2">
                 <div className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Arquivos Anexados ({formData.attachments.length})</div>

@@ -1,6 +1,5 @@
+import { api, API_URL } from '../lib/api';
 import React, { useEffect, useState, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { Vehicle, PROGRESS_OPTIONS, PROGRESS_PERCENT } from '../types';
 import { useAuth } from '../AuthContext';
 import { differenceInMinutes, parseISO, format } from 'date-fns';
@@ -57,53 +56,47 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
   }, []);
 
   useEffect(() => {
-    const unsubContacts = onSnapshot(doc(db, 'settings', 'whatsapp'), (docSnap) => {
-      if (docSnap.exists()) {
-        setWhatsappContacts(docSnap.data().contacts || []);
-      }
-    }, (error) => {
-      console.log('Contacts listener error:', error);
-    });
-
-    const q = query(collection(db, 'vehicles'), orderBy('started_at', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
-      
-      let hasStatusChange = false;
-      let lastChangedVehicle: Vehicle | null = null;
-      data.forEach(v => {
-        if (v.id && v.progress_status) {
-          const prevStatus = prevStatuses.current[v.id];
-          if (prevStatus && prevStatus !== v.progress_status) {
-            hasStatusChange = true;
-            lastChangedVehicle = v;
+    let intId;
+    const fetchVehicles = async () => {
+      try {
+        const data = await api.get('/vehicles');
+        let hasStatusChange = false;
+        let lastChangedVehicle = null;
+        
+        data.forEach(v => {
+          if (typeof v.items === 'string') v.items = JSON.parse(v.items);
+          if (typeof v.images === 'string') v.images = JSON.parse(v.images);
+          if (typeof v.attachments === 'string') v.attachments = JSON.parse(v.attachments);
+          
+          if (v.id && v.progress_status) {
+            const prevStatus = prevStatuses.current[v.id];
+            if (prevStatus && prevStatus !== v.progress_status) {
+              hasStatusChange = true;
+              lastChangedVehicle = v;
+            }
+            prevStatuses.current[v.id] = v.progress_status;
           }
-          prevStatuses.current[v.id] = v.progress_status;
-        }
-      });
+        });
 
-      if (hasStatusChange && lastChangedVehicle) {
-        const txt = `Atenção: Carro ${(lastChangedVehicle as Vehicle).daily_sequence}, placa ${(lastChangedVehicle as Vehicle).plate}, mudou para o status ${(lastChangedVehicle as Vehicle).progress_status}.`;
-        speakNotification(txt);
-        setAlertText(txt);
-        setTimeout(() => setAlertText(null), 8000);
-      }
-      
-      setVehicles(data);
-    }, (error) => {
-      console.log('Vehicles listener error:', error);
-    });
-    return () => {
-      unsubscribe();
-      unsubContacts();
+        if (hasStatusChange && lastChangedVehicle) {
+          const txt = `Atenção: Carro ${lastChangedVehicle.daily_sequence}, placa ${lastChangedVehicle.plate}, mudou para o status ${lastChangedVehicle.progress_status}.`;
+          speakNotification(txt);
+          setAlertText(txt);
+          setTimeout(() => setAlertText(null), 8000);
+        }
+        setVehicles(data);
+      } catch (err) {}
     };
+    fetchVehicles();
+    intId = setInterval(fetchVehicles, 5000);
+    return () => clearInterval(intId);
   }, []);
 
   const availableDates = Array.from(new Set(vehicles.map(v => v.created_at ? format(parseISO(v.created_at), 'yyyy-MM-dd') : ''))).filter(Boolean).sort().reverse() as string[];
 
   const handleStatusChange = async (vehicleId: string, nextStatus: string) => {
     try {
-      const vehicleRef = doc(db, 'vehicles', vehicleId);
+      
       const now = new Date().toISOString();
       const percent = PROGRESS_PERCENT[nextStatus] || 10;
       
@@ -123,7 +116,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
         updateData.finished_at = now;
       }
       
-      await updateDoc(vehicleRef, updateData);
+      await api.put(`/vehicles/${vehicleId}`, updateData);
       const updatedVehicle = vehicles.find(v => v.id === vehicleId);
       if (updatedVehicle) {
         
@@ -135,7 +128,7 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'vehicles', id));
+      await api.delete(`/vehicles/${id}`);
       setConfirmDeleteId(null);
     } catch (e: any) {
       alert('Erro: ' + e.message);

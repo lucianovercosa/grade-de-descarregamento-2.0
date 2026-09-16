@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { api } from '../lib/api';
 
 export interface Responsible {
   id?: string;
   name: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export function ResponsiblesManager() {
@@ -13,17 +12,20 @@ export function ResponsiblesManager() {
   const [name, setName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const q = query(collection(db, 'responsibles'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Responsible));
-      setResponsibles(data);
-    }, (error) => {
-      console.log('Responsibles listener error:', error);
-    });
-    return unsubscribe;
+    fetchResponsibles();
   }, []);
+
+  const fetchResponsibles = async () => {
+    try {
+      const data = await api.get('/responsibles');
+      setResponsibles(data);
+    } catch(e) {
+      console.error(e);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,12 +34,10 @@ export function ResponsiblesManager() {
     setLoading(true);
     try {
       const id = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
-      await setDoc(doc(db, 'responsibles', id), {
-        name: name.trim(),
-        created_at: new Date().toISOString()
-      });
+      await api.post('/responsibles', { id, name: name.trim() });
       setIsAdding(false);
       setName('');
+      fetchResponsibles();
     } catch (err: any) {
       console.error(err);
       alert('Erro ao salvar responsável: ' + err.message);
@@ -46,12 +46,11 @@ export function ResponsiblesManager() {
     }
   };
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'responsibles', id));
+      await api.delete(`/responsibles/${id}`);
       setDeletingId(null);
+      fetchResponsibles();
     } catch (err: any) {
       alert('Erro ao excluir: ' + err.message);
     }
@@ -69,7 +68,7 @@ export function ResponsiblesManager() {
               required 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal" 
+              className="bg-black/40 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white font-normal"
             />
           </label>
           

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { api } from '../lib/api';
 import { Vehicle } from '../types';
 import { Truck } from 'lucide-react';
 
@@ -10,19 +9,27 @@ export function PublicStatus({ token }: { token: string }) {
   const [previewAtt, setPreviewAtt] = useState<{name: string, url: string, type: string} | null>(null);
 
   useEffect(() => {
-    const q = query(collection(db, 'vehicles'), where('public_token', '==', token));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        setVehicle({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Vehicle);
-      } else {
-        setVehicle(null);
+    let intId: any;
+    const fetchVehicles = async () => {
+      try {
+        const data = await api.get('/vehicles');
+        const v = data.find((veh: any) => veh.public_token === token);
+        if (v) {
+          if (typeof v.items === 'string') v.items = JSON.parse(v.items);
+          if (typeof v.images === 'string') v.images = JSON.parse(v.images);
+          if (typeof v.attachments === 'string') v.attachments = JSON.parse(v.attachments);
+          setVehicle(v);
+        } else {
+          setVehicle(null);
+        }
+        setLoading(false);
+      } catch (e) {
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      console.log('Public status listener error:', error);
-      setLoading(false);
-    });
-    return unsubscribe;
+    };
+    fetchVehicles();
+    intId = setInterval(fetchVehicles, 5000);
+    return () => clearInterval(intId);
   }, [token]);
 
   const openAttachment = (e: React.MouseEvent, att: {name?: string, url: string, type?: string}) => {
@@ -134,7 +141,7 @@ export function PublicStatus({ token }: { token: string }) {
           </div>
         )}
         
-        <p className="text-xs text-center text-slate-400 mt-4">Atualizado em: {new Date(vehicle.updated_at).toLocaleString('pt-BR')}</p>
+        <p className="text-xs text-center text-slate-400 mt-4">Atualizado em: {new Date(vehicle.updated_at || Date.now()).toLocaleString('pt-BR')}</p>
         
         <div className="mt-8 text-center border-t border-slate-200 pt-6">
           <button onClick={() => window.location.href = '/'} className="text-xs font-bold text-slate-500 hover:text-slate-800">

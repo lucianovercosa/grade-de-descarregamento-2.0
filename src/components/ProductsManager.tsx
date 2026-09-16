@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import * as xlsx from 'xlsx';
-import { collection, doc, writeBatch } from 'firebase/firestore';
-import { db } from '../firebase';
+import { api } from '../lib/api';
 
 export function ProductsManager() {
   const [loading, setLoading] = useState(false);
@@ -11,7 +10,6 @@ export function ProductsManager() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setLoading(true);
     setMessage('');
     setError('');
@@ -24,46 +22,33 @@ export function ProductsManager() {
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const data = xlsx.utils.sheet_to_json(ws, { header: 1 }) as any[][];
-
         if (data.length < 2) {
           throw new Error('A planilha parece estar vazia ou sem cabeçalhos.');
         }
 
-        // Assuming row 0 is header, and data starts from row 1.
-        // We look for columns that contain 'codigo' or 'desc'
         const headers = data[0].map(h => h ? String(h).toLowerCase().trim() : '');
         let codeIdx = headers.findIndex(h => h.includes('cod') || h.includes('cód'));
         let descIdx = headers.findIndex(h => h.includes('desc'));
 
         if (codeIdx === -1 || descIdx === -1) {
-          // If we can't find by header name, assume 0 is code and 1 is description
           codeIdx = 0;
           descIdx = 1;
         }
 
-        const batch = writeBatch(db);
-        let count = 0;
-
+        const items = [];
         for (let i = 1; i < data.length; i++) {
           const row = data[i];
           if (!row || row.length === 0) continue;
           const code = row[codeIdx] ? String(row[codeIdx]).trim() : '';
           const desc = row[descIdx] ? String(row[descIdx]).trim() : '';
-
           if (code && desc) {
-            const productRef = doc(db, 'products', code);
-            batch.set(productRef, {
-              code,
-              description: desc,
-              updated_at: new Date().toISOString()
-            }, { merge: true });
-            count++;
+            items.push({ code, description: desc });
           }
         }
 
-        if (count > 0) {
-          await batch.commit();
-          setMessage(`${count} produtos importados/atualizados com sucesso.`);
+        if (items.length > 0) {
+          const res = await api.post('/products/batch', { items });
+          setMessage(`${res.count} produtos importados/atualizados com sucesso.`);
         } else {
           setError('Nenhum produto encontrado para importar.');
         }
@@ -72,7 +57,6 @@ export function ProductsManager() {
         setError(err.message || 'Erro ao processar o arquivo.');
       } finally {
         setLoading(false);
-        // Clear the input
         if (e.target) {
           e.target.value = '';
         }

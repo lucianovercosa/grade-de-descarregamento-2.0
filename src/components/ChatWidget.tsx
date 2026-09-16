@@ -1,50 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, getDocs, writeBatch } from 'firebase/firestore';
-import { db } from '../firebase';
+import { api } from '../lib/api';
 import { useAuth } from '../AuthContext';
-import { AppUser, ChatMessage } from '../types';
 import { MessageSquare, X, Send, Trash2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { parseISO, format } from 'date-fns';
+
+export interface ChatMessage {
+  id?: string;
+  text: string;
+  user_id: string;
+  user_name: string;
+  target_user_id?: string | null;
+  target_user_name?: string | null;
+  created_at?: string;
+}
 
 export function ChatWidget() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [users, setUsers] = useState<AppUser[]>([]);
   const [targetUserId, setTargetUserId] = useState<string>('all');
-  const { user } = useAuth();
+  const [users, setUsers] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  useEffect(() => {
-    if (!user) return;
-    
-    const qUsers = query(collection(db, 'users'), orderBy('name', 'asc'));
-    const unsubscribeUsers = onSnapshot(qUsers, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
-      setUsers(data);
-    }, (error) => {
-      console.error("Error fetching chat users:", error);
-    });
-
-    const q = query(collection(db, 'chat_messages'), orderBy('created_at', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
-      setMessages(data);
-    }, (error) => {
-      console.error("Error fetching chat messages:", error);
-    });
-
-    return () => {
-      unsubscribeUsers();
-      unsubscribe();
-    };
-  }, [user]);
-  
+  const [unreadCount, setUnreadCount] = useState(0);
   const prevMessagesLength = useRef(0);
   const [previewMessage, setPreviewMessage] = useState<ChatMessage | null>(null);
   const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const u = await api.get('/users');
+        setUsers(u);
+      } catch (err) {}
+    };
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const data = await api.get('/chat_messages');
+        setMessages(data);
+      } catch (e) {}
+    };
+    fetchMessages();
+    const intId = setInterval(fetchMessages, 3000);
+    return () => clearInterval(intId);
+  }, []);
+
   useEffect(() => {
     if (messages.length > prevMessagesLength.current) {
       if (!isOpen) {
@@ -63,7 +68,6 @@ export function ChatWidget() {
           setUnreadCount(prev => prev + newUnread);
         }
         
-        // Show preview of the latest relevant message
         if (latestTargetedMsg) {
           setPreviewMessage(latestTargetedMsg);
           if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
@@ -102,12 +106,12 @@ export function ChatWidget() {
     
     let targetName = null;
     if (targetUserId !== 'all') {
-      const targetUser = users.find(u => u.id === targetUserId);
+      const targetUser = users.find(u => u.id === targetUserId || u.uid === targetUserId);
       if (targetUser) targetName = targetUser.name;
     }
     
     try {
-      await addDoc(collection(db, 'chat_messages'), {
+      await api.post('/chat_messages', {
         text,
         user_id: user.uid,
         user_name: user.name,
@@ -124,22 +128,8 @@ export function ChatWidget() {
     e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja limpar o chat para todos?')) return;
     try {
-      const q = query(collection(db, 'chat_messages'));
-      const snapshot = await getDocs(q);
-      
-      // Firestore batch has a limit of 500 operations. We'll chunk it to 400 to be safe.
-      const chunks = [];
-      for (let i = 0; i < snapshot.docs.length; i += 400) {
-        chunks.push(snapshot.docs.slice(i, i + 400));
-      }
-
-      for (const chunk of chunks) {
-        const batch = writeBatch(db);
-        chunk.forEach((doc) => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
-      }
+      await api.delete('/chat_messages');
+      setMessages([]);
     } catch (error: any) {
       console.error('Error clearing chat:', error);
       alert('Erro ao limpar o chat: ' + error.message);
