@@ -225,7 +225,9 @@ export function Dashboard({ onEditVehicle }: DashboardProps) {
 
   const openAttachment = (e: React.MouseEvent, att: {name?: string, url: string, type?: string}) => {
     e.preventDefault();
-    if (att.url.startsWith('data:image/') || att.url.includes('firebasestorage')) {
+    const isImage = att.type?.startsWith('image/') || att.url.startsWith('data:image/') || att.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    
+    if (isImage && (att.url.startsWith('data:image/') || att.url.includes('firebasestorage') || att.url.startsWith('/uploads/'))) {
       setPreviewAtt({ name: att.name || 'Anexo', url: att.url, type: att.type || 'image/jpeg' });
     } else {
       if (att.url.startsWith('data:')) {
