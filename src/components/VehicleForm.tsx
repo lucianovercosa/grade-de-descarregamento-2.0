@@ -84,14 +84,19 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
           finalFile = await imageCompression(file, { maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true });
         }
         
-        const reader = new FileReader();
-        const base64Url = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(finalFile);
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', finalFile, file.name);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formDataUpload
         });
+
+        if (!response.ok) throw new Error("Falha no upload do arquivo para o servidor local.");
         
-        newAttachments.push({ name: file.name, url: base64Url, type: file.type });
+        const data = await response.json();
+        
+        newAttachments.push({ name: file.name, url: data.url, type: file.type });
       }
       setFormData({ ...formData, attachments: newAttachments });
     } catch (error) {
@@ -105,7 +110,7 @@ export function VehicleForm({ vehicleId, onSaved, onCancel }: VehicleFormProps) 
 
   const openAttachment = (e: React.MouseEvent, att: {name?: string, url: string, type?: string}) => {
     e.preventDefault();
-    if (att.url.startsWith('data:image/') || att.url.includes('firebasestorage')) {
+    if (att.url.startsWith('data:image/') || att.url.includes('firebasestorage') || att.url.startsWith('/uploads/')) {
       setPreviewAtt({ name: att.name || 'Anexo', url: att.url, type: att.type || 'image/jpeg' });
     } else {
       if (att.url.startsWith('data:')) {
