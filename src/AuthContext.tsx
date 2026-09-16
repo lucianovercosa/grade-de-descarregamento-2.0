@@ -28,15 +28,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
-    try {
-      const res = await api.get('/auth/me');
-      setUser(res.user);
-    } catch (e) {
-      setUser(null);
-      clearLocalToken();
-    } finally {
-      setLoading(false);
-    }
+    // Bypass login screen
+    setUser({
+      uid: 'admin_uid',
+      email: 'admin@local.com',
+      role: 'admin',
+      name: 'Administrador (Bypass)',
+      permissions: ['manage_vehicles','manage_products','manage_users','manage_responsibles','manage_roles','view_dashboard','view_tv']
+    });
+    setLoading(false);
   };
 
   useEffect(() => {
